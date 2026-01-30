@@ -1,11 +1,12 @@
 // src/screens/main/HomeScreen.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect, useNavigation, CompositeNavigationProp } from '@react-navigation/native';
+import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { ScreenContainer } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
-import { HomeStackParamList } from '../../navigation/types';
+import { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 import { Episode, Intervention, WeeklyCheckin } from '../../types';
 import { getActiveEpisode } from '../../db/repositories/episodes';
 import { getInterventionsByEpisode } from '../../db/repositories/interventions';
@@ -14,7 +15,16 @@ import { formatDateDisplay } from '../../utils/dates';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
 
+// Composite navigation type to navigate both within stack and to other tabs
+type HomeNavigationProp = CompositeNavigationProp<
+  NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>,
+  BottomTabNavigationProp<MainTabParamList>
+>;
+
 export function HomeScreen({ navigation }: Props) {
+  // Get parent navigation to switch tabs
+  const tabNavigation = useNavigation<HomeNavigationProp>();
+  
   const [episode, setEpisode] = useState<Episode | null>(null);
   const [interventions, setInterventions] = useState<Intervention[]>([]);
   const [recentCheckins, setRecentCheckins] = useState<WeeklyCheckin[]>([]);
@@ -71,6 +81,10 @@ export function HomeScreen({ navigation }: Props) {
         checkinId: checkin.id 
       });
     }
+  };
+
+  const handleAddNote = () => {
+    tabNavigation.navigate('Calendar');
   };
 
   if (loading) {
@@ -188,7 +202,7 @@ export function HomeScreen({ navigation }: Props) {
           <View style={styles.actionsSection}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
             <View style={styles.actionsGrid}>
-              <TouchableOpacity style={styles.actionCard}>
+              <TouchableOpacity style={styles.actionCard} onPress={handleAddNote}>
                 <Text style={styles.actionIcon}>📝</Text>
                 <Text style={styles.actionLabel}>Add Note</Text>
               </TouchableOpacity>
