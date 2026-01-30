@@ -13,15 +13,6 @@ export const migrations: Migration[] = [
     name: "init_schema",
     sql: [
       `
-      PRAGMA journal_mode = WAL;
-      `,
-      `
-      CREATE TABLE IF NOT EXISTS meta (
-        key TEXT PRIMARY KEY NOT NULL,
-        value TEXT NOT NULL
-      );
-      `,
-      `
       CREATE TABLE IF NOT EXISTS baseline_context (
         id TEXT PRIMARY KEY NOT NULL,
         created_at TEXT NOT NULL,
@@ -134,11 +125,17 @@ export const migrations: Migration[] = [
       `
       CREATE INDEX IF NOT EXISTS idx_day_notes_episode_date ON day_notes(episode_id, date);
       `,
+      `
+      CREATE INDEX IF NOT EXISTS idx_reports_episode ON reports(episode_id);
+      `,
     ],
   },
 ];
 
 export async function runMigrations(db: SQLite.SQLiteDatabase) {
+  // Set WAL mode before anything else (must be outside transaction)
+  await db.execAsync(`PRAGMA journal_mode = WAL;`);
+
   // Create meta table first if needed (for very first run)
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS meta (
