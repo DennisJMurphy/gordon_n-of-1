@@ -83,7 +83,7 @@ export function BaselineContextScreen({ navigation }: OnboardingScreenProps<'Bas
   return (
     <ScreenContainer scrollable>
       <View style={styles.header}>
-        <Text style={styles.title}>Your Anonymous Box</Text>
+        <Text style={styles.title}>Your Baseline Context</Text>
         <Text style={styles.subtitle}>
           This bracketed info helps interpret your reports.{'\n'}
           All fields are optional. Toggle what to share by default.

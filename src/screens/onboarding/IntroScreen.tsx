@@ -10,10 +10,11 @@ export function IntroScreen({ navigation }: OnboardingScreenProps<'Intro'>) {
     <ScreenContainer>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          {/* Placeholder for beaver icon */}
-          <View style={styles.logoPlaceholder}>
-            <Text style={styles.logoEmoji}>🦫</Text>
-          </View>
+          <Image 
+            source={require('../../../assets/splash-icon.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Gordon</Text>
           <Text style={styles.subtitle}>an n-of-1 report tool</Text>
         </View>
@@ -54,17 +55,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xxl,
   },
-  logoPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logo: {
+    width: 120,
+    height: 120,
     marginBottom: spacing.md,
-  },
-  logoEmoji: {
-    fontSize: 48,
   },
   title: {
     fontSize: fontSize.xxl,
