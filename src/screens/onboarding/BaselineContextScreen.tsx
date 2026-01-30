@@ -1,10 +1,11 @@
 // src/screens/onboarding/BaselineContextScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { ScreenContainer, Button, Select, TextInput, Toggle } from '../../components/ui';
-import { colors, spacing, fontSize } from '../../theme';
+import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import { ScreenContainer, Button, TextInput } from '../../components/ui';
+import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { OnboardingScreenProps } from '../../navigation/types';
 import { Sex, RelationshipStatus, ShareDefaults } from '../../types';
+import { useOnboarding } from '../../context/OnboardingContext';
 
 const SEX_OPTIONS: { label: string; value: Sex }[] = [
   { label: 'Male', value: 'male' },
@@ -36,8 +37,65 @@ const RELATIONSHIP_OPTIONS: { label: string; value: RelationshipStatus }[] = [
   { label: 'Prefer not to say', value: 'prefer_not_to_say' },
 ];
 
-// Use context to pass data between onboarding screens
-import { useOnboarding } from '../../context/OnboardingContext';
+interface FieldWithShareProps {
+  label: string;
+  shareValue: boolean;
+  onShareChange: () => void;
+  children: React.ReactNode;
+}
+
+function FieldWithShare({ label, shareValue, onShareChange, children }: FieldWithShareProps) {
+  return (
+    <View style={styles.fieldContainer}>
+      <View style={styles.fieldHeader}>
+        <Text style={styles.fieldLabel}>{label}</Text>
+        <View style={styles.shareToggle}>
+          <Text style={styles.shareLabel}>Share</Text>
+          <Switch
+            value={shareValue}
+            onValueChange={onShareChange}
+            trackColor={{ false: colors.border, true: colors.accentMuted }}
+            thumbColor={shareValue ? colors.accent : colors.textMuted}
+          />
+        </View>
+      </View>
+      {children}
+    </View>
+  );
+}
+
+interface ChipSelectProps<T extends string> {
+  options: { label: string; value: T }[];
+  value: T | undefined;
+  onChange: (value: T) => void;
+}
+
+function ChipSelect<T extends string>({ options, value, onChange }: ChipSelectProps<T>) {
+  return (
+    <View style={styles.chipContainer}>
+      {options.map((option) => (
+        <TouchableOpacity
+          key={option.value}
+          style={[
+            styles.chip,
+            value === option.value && styles.chipSelected,
+          ]}
+          onPress={() => onChange(option.value)}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.chipText,
+              value === option.value && styles.chipTextSelected,
+            ]}
+          >
+            {option.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
 
 export function BaselineContextScreen({ navigation }: OnboardingScreenProps<'BaselineContext'>) {
   const { state, updateBaseline } = useOnboarding();
@@ -54,7 +112,6 @@ export function BaselineContextScreen({ navigation }: OnboardingScreenProps<'Bas
   );
   const [healthNotes, setHealthNotes] = useState(state.baseline.health_notes ?? '');
 
-  // Share toggles
   const [shareDefaults, setShareDefaults] = useState<ShareDefaults>(
     state.baseline.share_defaults ?? {}
   );
@@ -91,119 +148,87 @@ export function BaselineContextScreen({ navigation }: OnboardingScreenProps<'Bas
       </View>
 
       <View style={styles.section}>
-        <View style={styles.fieldRow}>
-          <View style={styles.field}>
-            <Select
-              label="Sex"
-              options={SEX_OPTIONS}
-              value={sex}
-              onChange={setSex}
-            />
-          </View>
-          <Toggle
-            label="Share"
-            value={shareDefaults.sex ?? false}
-            onChange={() => toggleShare('sex')}
-          />
-        </View>
+        <FieldWithShare
+          label="Sex"
+          shareValue={shareDefaults.sex ?? false}
+          onShareChange={() => toggleShare('sex')}
+        >
+          <ChipSelect options={SEX_OPTIONS} value={sex} onChange={setSex} />
+        </FieldWithShare>
 
-        <View style={styles.fieldRow}>
-          <View style={styles.field}>
-            <Select
-              label="Age bracket"
-              options={AGE_BRACKETS.map((b) => ({ label: b, value: b }))}
-              value={ageBracket}
-              onChange={setAgeBracket}
-            />
-          </View>
-          <Toggle
-            label="Share"
-            value={shareDefaults.age_bracket ?? false}
-            onChange={() => toggleShare('age_bracket')}
+        <FieldWithShare
+          label="Age bracket"
+          shareValue={shareDefaults.age_bracket ?? false}
+          onShareChange={() => toggleShare('age_bracket')}
+        >
+          <ChipSelect
+            options={AGE_BRACKETS.map((b) => ({ label: b, value: b }))}
+            value={ageBracket}
+            onChange={setAgeBracket}
           />
-        </View>
+        </FieldWithShare>
 
-        <View style={styles.fieldRow}>
-          <View style={styles.field}>
-            <Select
-              label="Height (cm)"
-              options={HEIGHT_BRACKETS.map((b) => ({ label: b, value: b }))}
-              value={heightBracket}
-              onChange={setHeightBracket}
-            />
-          </View>
-          <Toggle
-            label="Share"
-            value={shareDefaults.height_bracket_cm ?? false}
-            onChange={() => toggleShare('height_bracket_cm')}
+        <FieldWithShare
+          label="Height (cm)"
+          shareValue={shareDefaults.height_bracket_cm ?? false}
+          onShareChange={() => toggleShare('height_bracket_cm')}
+        >
+          <ChipSelect
+            options={HEIGHT_BRACKETS.map((b) => ({ label: b, value: b }))}
+            value={heightBracket}
+            onChange={setHeightBracket}
           />
-        </View>
+        </FieldWithShare>
 
-        <View style={styles.fieldRow}>
-          <View style={styles.field}>
-            <Select
-              label="Weight (kg)"
-              options={WEIGHT_BRACKETS.map((b) => ({ label: b, value: b }))}
-              value={weightBracket}
-              onChange={setWeightBracket}
-            />
-          </View>
-          <Toggle
-            label="Share"
-            value={shareDefaults.weight_bracket_kg ?? false}
-            onChange={() => toggleShare('weight_bracket_kg')}
+        <FieldWithShare
+          label="Weight (kg)"
+          shareValue={shareDefaults.weight_bracket_kg ?? false}
+          onShareChange={() => toggleShare('weight_bracket_kg')}
+        >
+          <ChipSelect
+            options={WEIGHT_BRACKETS.map((b) => ({ label: b, value: b }))}
+            value={weightBracket}
+            onChange={setWeightBracket}
           />
-        </View>
+        </FieldWithShare>
 
-        <View style={styles.fieldRow}>
-          <View style={styles.field}>
-            <Select
-              label="Relationship"
-              options={RELATIONSHIP_OPTIONS}
-              value={relationship}
-              onChange={setRelationship}
-            />
-          </View>
-          <Toggle
-            label="Share"
-            value={shareDefaults.relationship_status ?? false}
-            onChange={() => toggleShare('relationship_status')}
+        <FieldWithShare
+          label="Relationship"
+          shareValue={shareDefaults.relationship_status ?? false}
+          onShareChange={() => toggleShare('relationship_status')}
+        >
+          <ChipSelect
+            options={RELATIONSHIP_OPTIONS}
+            value={relationship}
+            onChange={setRelationship}
           />
-        </View>
+        </FieldWithShare>
 
-        <View style={styles.fieldRow}>
-          <View style={styles.field}>
-            <TextInput
-              label="Typical cardio (min/week)"
-              value={cardioMinutes}
-              onChangeText={setCardioMinutes}
-              keyboardType="numeric"
-              placeholder="e.g., 150"
-            />
-          </View>
-          <Toggle
-            label="Share"
-            value={shareDefaults.typical_cardio_min_per_week ?? false}
-            onChange={() => toggleShare('typical_cardio_min_per_week')}
+        <FieldWithShare
+          label="Typical cardio (min/week)"
+          shareValue={shareDefaults.typical_cardio_min_per_week ?? false}
+          onShareChange={() => toggleShare('typical_cardio_min_per_week')}
+        >
+          <TextInput
+            value={cardioMinutes}
+            onChangeText={setCardioMinutes}
+            keyboardType="numeric"
+            placeholder="e.g., 150"
           />
-        </View>
+        </FieldWithShare>
 
-        <View style={styles.fieldRow}>
-          <View style={styles.field}>
-            <TextInput
-              label="Health notes (brief)"
-              value={healthNotes}
-              onChangeText={setHealthNotes}
-              placeholder="e.g., rosacea (well controlled)"
-              multiline
-            />
-          </View>
-          <Toggle
-            label="Share"
-            value={shareDefaults.health_notes ?? false}
-            onChange={() => toggleShare('health_notes')}
+        <FieldWithShare
+          label="Health notes (brief)"
+          shareValue={shareDefaults.health_notes ?? false}
+          onShareChange={() => toggleShare('health_notes')}
+        >
+          <TextInput
+            value={healthNotes}
+            onChangeText={setHealthNotes}
+            placeholder="e.g., rosacea (well controlled)"
+            multiline
           />
-        </View>
+        </FieldWithShare>
       </View>
 
       <View style={styles.footer}>
@@ -237,13 +262,53 @@ const styles = StyleSheet.create({
   section: {
     flex: 1,
   },
-  fieldRow: {
+  fieldContainer: {
+    marginBottom: spacing.lg,
+  },
+  fieldHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  field: {
-    flex: 1,
+  fieldLabel: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  shareToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  shareLabel: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  chip: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipSelected: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  chipText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  chipTextSelected: {
+    color: colors.background,
+    fontWeight: '600',
   },
   footer: {
     paddingVertical: spacing.lg,
