@@ -29,4 +29,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     favicon: './assets/favicon.png',
   },
   plugins: ['expo-sqlite'],
+  extra: {
+    eas: {
+      projectId: '12e540e3-c20f-40fb-9a16-3efe865eb8c7',
+    },
+  },
 });
