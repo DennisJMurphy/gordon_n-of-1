@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Share,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '../../components/ui';
@@ -15,7 +16,7 @@ import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { MainTabScreenProps } from '../../navigation/types';
 import { Report, Episode } from '../../types';
 import { getAllEpisodes } from '../../db/repositories/episodes';
-import { getReportsByEpisode, deleteReport } from '../../db/repositories/reports';
+import { getReportsByEpisode, deleteReport, markReportExported } from '../../db/repositories/reports';
 import { ShareSafeReport } from '../../services/reportBuilder';
 
 interface ReportWithEpisode {
@@ -27,6 +28,8 @@ interface ReportWithEpisode {
 export function ReportsScreen({ navigation }: MainTabScreenProps<'Reports'>) {
   const [reports, setReports] = useState<ReportWithEpisode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
+  const [showJsonForReport, setShowJsonForReport] = useState<string | null>(null);
 
   const loadReports = useCallback(async () => {
     try {
@@ -67,13 +70,31 @@ export function ReportsScreen({ navigation }: MainTabScreenProps<'Reports'>) {
 
   const handleShare = async (report: Report) => {
     try {
-      await Share.share({
+      const result = await Share.share({
         message: report.report_json,
         title: 'Gordon n-of-1 Report',
       });
+      
+      // Track export if shared successfully
+      if (result.action === Share.sharedAction) {
+        await markReportExported(report.id, 'share_sheet');
+        loadReports(); // Refresh to show export status
+      }
     } catch (error) {
       console.error('Failed to share:', error);
     }
+  };
+
+  const handleToggleExpand = (reportId: string) => {
+    setExpandedReportId(prev => prev === reportId ? null : reportId);
+    // Reset JSON preview when collapsing
+    if (expandedReportId === reportId) {
+      setShowJsonForReport(null);
+    }
+  };
+
+  const handleToggleJson = (reportId: string) => {
+    setShowJsonForReport(prev => prev === reportId ? null : reportId);
   };
 
   const handleDelete = (report: Report) => {
@@ -110,9 +131,15 @@ export function ReportsScreen({ navigation }: MainTabScreenProps<'Reports'>) {
 
   const renderItem = ({ item }: { item: ReportWithEpisode }) => {
     const { report, episode, shareSafe } = item;
+    const isExpanded = expandedReportId === report.id;
+    const showJson = showJsonForReport === report.id;
     
     return (
-      <View style={styles.reportCard}>
+      <TouchableOpacity 
+        style={styles.reportCard}
+        onPress={() => handleToggleExpand(report.id)}
+        activeOpacity={0.8}
+      >
         <View style={styles.reportHeader}>
           <Text style={styles.episodeTitle}>{episode.title}</Text>
           <View style={styles.typeBadge}>
@@ -123,6 +150,19 @@ export function ReportsScreen({ navigation }: MainTabScreenProps<'Reports'>) {
         <Text style={styles.generatedDate}>
           Generated {formatDate(report.generated_at)}
         </Text>
+        
+        {/* Export Status */}
+        {report.exported_at ? (
+          <View style={styles.exportStatus}>
+            <Text style={styles.exportStatusText}>
+              ✓ Exported {formatDate(report.exported_at)}
+            </Text>
+          </View>
+        ) : (
+          <View style={[styles.exportStatus, styles.exportStatusPending]}>
+            <Text style={styles.exportStatusTextPending}>Not yet exported</Text>
+          </View>
+        )}
         
         <View style={styles.statsRow}>
           <View style={styles.stat}>
@@ -141,23 +181,127 @@ export function ReportsScreen({ navigation }: MainTabScreenProps<'Reports'>) {
           </View>
         </View>
         
-        <View style={styles.cardActions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => handleShare(report)}
-          >
-            <Text style={styles.actionButtonText}>Share</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.deleteAction]}
-            onPress={() => handleDelete(report)}
-          >
-            <Text style={[styles.actionButtonText, styles.deleteActionText]}>
-              Delete
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        {/* Expand indicator */}
+        <Text style={styles.expandHint}>
+          {isExpanded ? '▲ Tap to collapse' : '▼ Tap to view details'}
+        </Text>
+        
+        {/* Expanded Detail View */}
+        {isExpanded && (
+          <View style={styles.detailSection}>
+            {/* Human-readable Summary */}
+            <View style={styles.summarySection}>
+              <Text style={styles.sectionTitle}>Summary</Text>
+              
+              {shareSafe.interventions.length > 0 && (
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Interventions:</Text>
+                  {shareSafe.interventions.map((intervention, idx) => (
+                    <Text key={idx} style={styles.summaryText}>
+                      • {intervention.compound.toUpperCase()}
+                      {intervention.dose ? ` ${intervention.dose}${intervention.unit || ''}` : ''}
+                      {intervention.route ? ` (${intervention.route})` : ''}
+                    </Text>
+                  ))}
+                </View>
+              )}
+              
+              {shareSafe.adherence_summary.length > 0 && (
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Adherence:</Text>
+                  {shareSafe.adherence_summary.map((adherence, idx) => (
+                    <Text key={idx} style={styles.summaryText}>
+                      • {adherence.compound.toUpperCase()}: {adherence.average_adherence}
+                      {adherence.weeks_tracked > 0 && ` (${adherence.weeks_tracked} weeks tracked)`}
+                    </Text>
+                  ))}
+                </View>
+              )}
+              
+              {shareSafe.changes_summary && (
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Changes Reported:</Text>
+                  {shareSafe.changes_summary.diet_changes > 0 && (
+                    <Text style={styles.summaryText}>• Diet: {shareSafe.changes_summary.diet_changes} changes</Text>
+                  )}
+                  {shareSafe.changes_summary.exercise_changes > 0 && (
+                    <Text style={styles.summaryText}>• Exercise: {shareSafe.changes_summary.exercise_changes} changes</Text>
+                  )}
+                  {shareSafe.changes_summary.sleep_changes > 0 && (
+                    <Text style={styles.summaryText}>• Sleep: {shareSafe.changes_summary.sleep_changes} changes</Text>
+                  )}
+                  {shareSafe.changes_summary.illness_days > 0 && (
+                    <Text style={styles.summaryText}>• Illness: {shareSafe.changes_summary.illness_days} days</Text>
+                  )}
+                  {shareSafe.changes_summary.travel_days > 0 && (
+                    <Text style={styles.summaryText}>• Travel: {shareSafe.changes_summary.travel_days} days</Text>
+                  )}
+                  {shareSafe.changes_summary.stress_periods > 0 && (
+                    <Text style={styles.summaryText}>• Stress: {shareSafe.changes_summary.stress_periods} periods</Text>
+                  )}
+                </View>
+              )}
+              
+              {shareSafe.participant && (
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Participant Context:</Text>
+                  {shareSafe.participant.age_bracket && (
+                    <Text style={styles.summaryText}>• Age: {shareSafe.participant.age_bracket}</Text>
+                  )}
+                  {shareSafe.participant.sex && (
+                    <Text style={styles.summaryText}>• Sex: {shareSafe.participant.sex}</Text>
+                  )}
+                  {shareSafe.participant.typical_cardio_min_per_week !== undefined && (
+                    <Text style={styles.summaryText}>
+                      • Cardio: {shareSafe.participant.typical_cardio_min_per_week} min/week
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View>
+            
+            {/* Collapsible JSON Preview */}
+            <TouchableOpacity
+              style={styles.jsonToggle}
+              onPress={() => handleToggleJson(report.id)}
+            >
+              <Text style={styles.jsonToggleText}>
+                {showJson ? '▲ Hide JSON' : '▼ Show JSON'}
+              </Text>
+            </TouchableOpacity>
+            
+            {showJson && (
+              <ScrollView 
+                style={styles.jsonPreview} 
+                horizontal={false}
+                nestedScrollEnabled
+              >
+                <Text style={styles.jsonText}>
+                  {JSON.stringify(shareSafe, null, 2)}
+                </Text>
+              </ScrollView>
+            )}
+            
+            {/* Actions */}
+            <View style={styles.cardActions}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => handleShare(report)}
+              >
+                <Text style={styles.actionButtonText}>Export / Share</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.deleteAction]}
+                onPress={() => handleDelete(report)}
+              >
+                <Text style={[styles.actionButtonText, styles.deleteActionText]}>
+                  Delete
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </TouchableOpacity>
     );
   };
 
@@ -325,5 +469,85 @@ const styles = StyleSheet.create({
   },
   deleteActionText: {
     color: colors.error,
+  },
+  exportStatus: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.success + '20',
+    borderRadius: borderRadius.sm,
+    alignSelf: 'flex-start',
+    marginBottom: spacing.md,
+  },
+  exportStatusPending: {
+    backgroundColor: colors.textMuted + '20',
+  },
+  exportStatusText: {
+    fontSize: fontSize.xs,
+    color: colors.success,
+    fontWeight: '500',
+  },
+  exportStatusTextPending: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  expandHint: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  detailSection: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  summarySection: {
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  summaryItem: {
+    marginBottom: spacing.sm,
+  },
+  summaryLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: '500',
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  summaryText: {
+    fontSize: fontSize.sm,
+    color: colors.textPrimary,
+    marginLeft: spacing.sm,
+    lineHeight: 20,
+  },
+  jsonToggle: {
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing.sm,
+  },
+  jsonToggleText: {
+    fontSize: fontSize.sm,
+    color: colors.accent,
+    fontWeight: '500',
+  },
+  jsonPreview: {
+    maxHeight: 200,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  jsonText: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    fontFamily: 'monospace',
   },
 });
