@@ -87,6 +87,12 @@ export function HomeScreen({ navigation }: Props) {
     tabNavigation.navigate('Calendar');
   };
 
+  const handleCloseEpisode = () => {
+    if (episode) {
+      navigation.navigate('PrivacyPreview', { episodeId: episode.id });
+    }
+  };
+
   if (loading) {
     return (
       <ScreenContainer>
@@ -136,6 +142,14 @@ export function HomeScreen({ navigation }: Props) {
                 </Text>
               </View>
             )}
+
+            {/* Close Episode Button */}
+            <TouchableOpacity 
+              style={styles.closeEpisodeButton}
+              onPress={handleCloseEpisode}
+            >
+              <Text style={styles.closeEpisodeButtonText}>Close Episode & Generate Report</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Next Check-in */}
@@ -217,10 +231,14 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         </View>
       ) : (
-        <View style={styles.centered}>
+        <TouchableOpacity 
+          style={styles.centered}
+          onPress={() => navigation.navigate('NewEpisode')}
+          activeOpacity={0.7}
+        >
           <Text style={styles.noEpisodeText}>No active episode</Text>
-          <Text style={styles.noEpisodeHint}>Create a new episode to get started</Text>
-        </View>
+          <Text style={styles.noEpisodeHint}>Tap to create a new episode →</Text>
+        </TouchableOpacity>
       )}
     </ScreenContainer>
   );
@@ -346,6 +364,18 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.accent,
     fontWeight: '600',
+  },
+  closeEpisodeButton: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  closeEpisodeButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.warning,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   checkinCard: {
     backgroundColor: colors.surfaceElevated,

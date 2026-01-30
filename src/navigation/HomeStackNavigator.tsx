@@ -5,6 +5,10 @@ import { HomeStackParamList } from './types';
 import { HomeScreen } from '../screens/main/HomeScreen';
 import { WeeklyCheckinScreen } from '../screens/main/WeeklyCheckinScreen';
 import { CheckinHistoryScreen } from '../screens/main/CheckinHistoryScreen';
+import { PrivacyPreviewScreen } from '../screens/main/PrivacyPreviewScreen';
+import { ReportSuccessScreen } from '../screens/main/ReportSuccessScreen';
+import { NewEpisodeScreen } from '../screens/main/NewEpisodeScreen';
+import { InterventionSetupScreen } from '../screens/main/InterventionSetupScreen';
 import { colors, fontSize } from '../theme';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -34,6 +38,16 @@ export function HomeStackNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="NewEpisode"
+        component={NewEpisodeScreen}
+        options={{ title: 'New Episode' }}
+      />
+      <Stack.Screen
+        name="InterventionSetup"
+        component={InterventionSetupScreen}
+        options={{ title: 'Intervention Setup' }}
+      />
+      <Stack.Screen
         name="WeeklyCheckin"
         component={WeeklyCheckinScreen}
         options={{ title: 'Weekly Check-in' }}
@@ -42,6 +56,19 @@ export function HomeStackNavigator() {
         name="CheckinHistory"
         component={CheckinHistoryScreen}
         options={{ title: 'Check-in History' }}
+      />
+      <Stack.Screen
+        name="PrivacyPreview"
+        component={PrivacyPreviewScreen}
+        options={{ title: 'Privacy Preview' }}
+      />
+      <Stack.Screen
+        name="ReportSuccess"
+        component={ReportSuccessScreen}
+        options={{ 
+          title: 'Report Generated',
+          headerBackVisible: false, // Can't go back after generating
+        }}
       />
     </Stack.Navigator>
   );
