@@ -12,9 +12,21 @@ export type OnboardingStackParamList = {
   ReminderSetup: undefined;
 };
 
+// Home stack (nested in Home tab)
+export type HomeStackParamList = {
+  HomeMain: undefined;
+  WeeklyCheckin: {
+    episodeId: string;
+    checkinId?: string; // If provided, we're editing
+  };
+  CheckinHistory: {
+    episodeId: string;
+  };
+};
+
 // Main tab navigator
 export type MainTabParamList = {
-  Home: undefined;
+  Home: NavigatorScreenParams<HomeStackParamList>;
   Calendar: undefined;
   Reports: undefined;
   Settings: undefined;
@@ -29,6 +41,9 @@ export type RootStackParamList = {
 // Screen props helpers
 export type OnboardingScreenProps<T extends keyof OnboardingStackParamList> = 
   NativeStackScreenProps<OnboardingStackParamList, T>;
+
+export type HomeStackScreenProps<T extends keyof HomeStackParamList> = 
+  NativeStackScreenProps<HomeStackParamList, T>;
 
 export type MainTabScreenProps<T extends keyof MainTabParamList> = 
   CompositeScreenProps<

@@ -2,8 +2,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from './types';
+import { HomeStackNavigator } from './HomeStackNavigator';
 import {
-  HomeScreen,
   CalendarScreen,
   ReportsScreen,
   SettingsScreen,
@@ -52,7 +52,7 @@ export function MainTabNavigator() {
         ),
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Home" component={HomeStackNavigator} />
       <Tab.Screen name="Calendar" component={CalendarScreen} />
       <Tab.Screen name="Reports" component={ReportsScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
