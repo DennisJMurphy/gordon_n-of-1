@@ -81,6 +81,7 @@ export const migrations: Migration[] = [
         confidence TEXT CHECK (confidence IN ('sure','mostly','guessing')),
 
         created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
 
         FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE CASCADE
       );
