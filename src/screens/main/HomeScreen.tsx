@@ -1,6 +1,6 @@
 // src/screens/main/HomeScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { ScreenContainer } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { MainTabScreenProps } from '../../navigation/types';
@@ -47,7 +47,13 @@ export function HomeScreen({ navigation }: MainTabScreenProps<'Home'>) {
   return (
     <ScreenContainer>
       <View style={styles.header}>
-        <Text style={styles.greeting}>🦫 Gordon</Text>
+        <View style={styles.greetingRow}>
+          <Image 
+            source={require('../../../assets/icon.png')} 
+            style={styles.headerIcon}
+          />
+          <Text style={styles.greeting}>Gordon</Text>
+        </View>
       </View>
 
       {episode ? (
@@ -118,6 +124,15 @@ export function HomeScreen({ navigation }: MainTabScreenProps<'Home'>) {
 const styles = StyleSheet.create({
   header: {
     paddingVertical: spacing.lg,
+  },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerIcon: {
+    width: 32,
+    height: 32,
+    marginRight: spacing.sm,
   },
   greeting: {
     fontSize: fontSize.xl,

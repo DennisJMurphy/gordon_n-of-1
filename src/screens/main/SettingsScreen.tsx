@@ -1,6 +1,6 @@
 // src/screens/main/SettingsScreen.tsx
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { ScreenContainer } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { MainTabScreenProps } from '../../navigation/types';
@@ -52,8 +52,12 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
       </View>
 
       <View style={styles.footer}>
+        <Image 
+          source={require('../../../assets/icon.png')} 
+          style={styles.footerIcon}
+        />
         <Text style={styles.footerText}>
-          🦫 Gordon — an n-of-1 report tool
+          Gordon — an n-of-1 report tool
         </Text>
         <Text style={styles.footerSubtext}>
           Privacy-first. Nothing leaves without consent.
@@ -110,6 +114,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     paddingVertical: spacing.xl,
     alignItems: 'center',
+  },
+  footerIcon: {
+    width: 40,
+    height: 40,
+    marginBottom: spacing.sm,
   },
   footerText: {
     fontSize: fontSize.md,
