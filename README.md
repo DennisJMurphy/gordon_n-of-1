@@ -3,7 +3,7 @@ Gordon: an n-of-1 report tool
 **Gordon** is a privacy-first tool for turning personal self-experiments into structured, anonymized n-of-1 reports suitable for scientific analysis.  
 
 I built this app using a method I call "Guided Iteration". The story:  
-    - Dr. G.I. suggested the project to me (I told him I had extra cycles)  
+    - Dr. Georgios Ioannou (Greece) suggested the project to me (I told him I had extra cycles)  
     - fleshed out the idea with Chat GPT 5.2  
     - exported a `full_spec-v01.md` file and wrote a user `interaction_story.md`  
     - instructed Claude Opus 4.5 to assess the full_spec file and rough out some sensible iterations  
