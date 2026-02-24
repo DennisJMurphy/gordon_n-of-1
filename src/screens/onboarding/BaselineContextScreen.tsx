@@ -138,7 +138,7 @@ export function BaselineContextScreen({ navigation }: OnboardingScreenProps<'Bas
   };
 
   return (
-    <ScreenContainer scrollable>
+    <ScreenContainer scrollable safeBottom>
       <View style={styles.header}>
         <Text style={styles.title}>Your Baseline Context</Text>
         <Text style={styles.subtitle}>

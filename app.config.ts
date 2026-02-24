@@ -11,7 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
-    backgroundColor: '#0f1729', // matches theme background
+    backgroundColor: '#0f1729',
   },
   ios: {
     supportsTablet: true,
@@ -28,7 +28,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   web: {
     favicon: './assets/favicon.png',
   },
-  plugins: ['expo-sqlite'],
+  plugins: ['expo-sqlite',
+    '@react-native-community/datetimepicker',
+    ['expo-splash-screen', {
+      image: './assets/splash-icon.png',
+      imageWidth: 200,
+      resizeMode: 'contain',
+      backgroundColor: '#0f1729',
+    }],
+  ],
   extra: {
     eas: {
       projectId: '12e540e3-c20f-40fb-9a16-3efe865eb8c7',

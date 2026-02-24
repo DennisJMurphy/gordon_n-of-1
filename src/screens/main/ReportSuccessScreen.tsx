@@ -6,16 +6,19 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Share,
   Alert,
 } from 'react-native';
+// eslint-disable-next-line react-native/no-deprecated-modules
+import Clipboard  from '@react-native-clipboard/clipboard';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ScreenContainer, Button } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { HomeStackParamList } from '../../navigation/types';
-import { Report } from '../../types';
-import { getReportById } from '../../db/repositories/reports';
+import { Report, Episode } from '../../types';
+import { getReportById, markReportExported } from '../../db/repositories/reports';
+import { getEpisodeById } from '../../db/repositories/episodes';
 import { ShareSafeReport } from '../../services/reportBuilder';
+import { shareReportAsFile } from '../../services/reportSharing';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ReportSuccess'>;
 
@@ -23,6 +26,7 @@ export function ReportSuccessScreen({ navigation, route }: Props) {
   const { reportId } = route.params;
   
   const [report, setReport] = useState<Report | null>(null);
+  const [episode, setEpisode] = useState<Episode | null>(null);
   const [shareSafe, setShareSafe] = useState<ShareSafeReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [showJson, setShowJson] = useState(false);
@@ -37,6 +41,8 @@ export function ReportSuccessScreen({ navigation, route }: Props) {
       setReport(r);
       if (r) {
         setShareSafe(JSON.parse(r.report_json));
+        const ep = await getEpisodeById(r.episode_id);
+        setEpisode(ep);
       }
     } catch (error) {
       console.error('Failed to load report:', error);
@@ -46,13 +52,11 @@ export function ReportSuccessScreen({ navigation, route }: Props) {
   };
   
   const handleShare = async () => {
-    if (!report) return;
+    if (!report || !episode) return;
     
     try {
-      await Share.share({
-        message: report.report_json,
-        title: 'Gordon n-of-1 Report',
-      });
+      await shareReportAsFile(report, episode.title);
+      await markReportExported(report.id, 'share_sheet');
     } catch (error) {
       console.error('Failed to share:', error);
       Alert.alert('Error', 'Failed to share report');
@@ -60,8 +64,10 @@ export function ReportSuccessScreen({ navigation, route }: Props) {
   };
   
   const handleCopy = () => {
-    // Note: In a real app, you'd use Clipboard API
-    Alert.alert('Copied!', 'Report JSON copied to clipboard (not implemented in this demo)');
+    if (!report) return;
+    const prettyJson = JSON.stringify(JSON.parse(report.report_json), null, 2);
+    Clipboard.setString(prettyJson);
+    Alert.alert('Copied!', 'Report JSON copied to clipboard.');
   };
   
   const handleDone = () => {

@@ -1,12 +1,13 @@
 // src/screens/main/NewEpisodeScreen.tsx
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Alert, TouchableOpacity, Platform } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { ScreenContainer, Button, TextInput, Select } from '../../components/ui';
 import { colors, spacing, fontSize } from '../../theme';
 import { HomeStackScreenProps } from '../../navigation/types';
 import { EpisodeType } from '../../types';
-import { getQuarterLabel, getQuarterEndDate, formatDateISO } from '../../utils/dates';
-import { createEpisode } from '../../db/repositories/episodes';
+import { getQuarterEndDate, formatDateISO, formatDateDisplay, getDefaultEpisodeTitle } from '../../utils/dates';
+import { createEpisode, getAllEpisodes } from '../../db/repositories/episodes';
 
 const EPISODE_TYPE_OPTIONS: { label: string; value: EpisodeType }[] = [
   { label: 'Observational', value: 'observational' },
@@ -17,16 +18,63 @@ type Props = HomeStackScreenProps<'NewEpisode'>;
 
 export function NewEpisodeScreen({ navigation }: Props) {
   const today = new Date();
-  const defaultTitle = getQuarterLabel(today);
   const defaultEndDate = formatDateISO(getQuarterEndDate(today));
   const defaultStartDate = formatDateISO(today);
 
-  const [title, setTitle] = useState(defaultTitle);
-  const [startDate] = useState(defaultStartDate);
-  const [endDate] = useState(defaultEndDate);
+  const [title, setTitle] = useState('');
+  const [startDate, setStartDate] = useState(defaultStartDate);
+  const [endDate, setEndDate] = useState(defaultEndDate);
   const [type, setType] = useState<EpisodeType>('observational');
   const [specialSummary, setSpecialSummary] = useState('');
   const [saving, setSaving] = useState(false);
+  const [titleWasEdited, setTitleWasEdited] = useState(false);
+
+  // Date picker state
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+
+  // Load default title based on existing episodes
+  useEffect(() => {
+    (async () => {
+      if (!titleWasEdited) {
+        const episodes = await getAllEpisodes();
+        const defaultTitle = getDefaultEpisodeTitle(
+          new Date(startDate + 'T00:00:00'),
+          episodes
+        );
+        setTitle(defaultTitle);
+      }
+    })();
+  }, [startDate, titleWasEdited]);
+
+  const handleStartDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowStartPicker(false);
+    if (selectedDate) {
+      const newStart = formatDateISO(selectedDate);
+      setStartDate(newStart);
+      // If new start is after current end, push end date forward
+      if (newStart > endDate) {
+        setEndDate(formatDateISO(getQuarterEndDate(selectedDate)));
+      }
+    }
+  };
+
+  const handleEndDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowEndPicker(false);
+    if (selectedDate) {
+      const newEnd = formatDateISO(selectedDate);
+      if (newEnd < startDate) {
+        Alert.alert('Invalid date', 'End date must be after start date.');
+        return;
+      }
+      setEndDate(newEnd);
+    }
+  };
+
+  const handleTitleChange = (text: string) => {
+    setTitle(text);
+    setTitleWasEdited(true);
+  };
 
   const handleCreate = async () => {
     if (!title.trim()) {
@@ -72,28 +120,50 @@ export function NewEpisodeScreen({ navigation }: Props) {
         <TextInput
           label="Episode title"
           value={title}
-          onChangeText={setTitle}
-          placeholder={defaultTitle}
+          onChangeText={handleTitleChange}
+          placeholder="e.g. Q1 2026"
         />
 
         <View style={styles.dateRow}>
           <View style={styles.dateField}>
             <Text style={styles.label}>Start</Text>
-            <View style={styles.dateDisplay}>
-              <Text style={styles.dateText}>{startDate}</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.dateDisplay}
+              onPress={() => setShowStartPicker(true)}
+            >
+              <Text style={styles.dateText}>{formatDateDisplay(startDate)}</Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.dateField}>
             <Text style={styles.label}>End</Text>
-            <View style={styles.dateDisplay}>
-              <Text style={styles.dateText}>{endDate}</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.dateDisplay}
+              onPress={() => setShowEndPicker(true)}
+            >
+              <Text style={styles.dateText}>{formatDateDisplay(endDate)}</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        <Text style={styles.dateHint}>
-          Tap to change dates (date picker coming soon)
-        </Text>
+        {showStartPicker && (
+          <DateTimePicker
+            value={new Date(startDate + 'T00:00:00')}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            onChange={handleStartDateChange}
+            themeVariant="dark"
+          />
+        )}
+        {showEndPicker && (
+          <DateTimePicker
+            value={new Date(endDate + 'T00:00:00')}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            onChange={handleEndDateChange}
+            minimumDate={new Date(startDate + 'T00:00:00')}
+            themeVariant="dark"
+          />
+        )}
 
         <View style={styles.typeSection}>
           <Text style={styles.sectionTitle}>What kind of episode is this?</Text>
@@ -177,15 +247,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     padding: spacing.md,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   dateText: {
     fontSize: fontSize.md,
     color: colors.textPrimary,
-  },
-  dateHint: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    marginBottom: spacing.lg,
   },
   typeSection: {
     marginBottom: spacing.lg,

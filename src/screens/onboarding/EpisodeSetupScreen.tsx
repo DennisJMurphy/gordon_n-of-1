@@ -1,11 +1,12 @@
 // src/screens/onboarding/EpisodeSetupScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { ScreenContainer, Button, TextInput, Select } from '../../components/ui';
 import { colors, spacing, fontSize } from '../../theme';
 import { OnboardingScreenProps } from '../../navigation/types';
 import { EpisodeType } from '../../types';
-import { getQuarterLabel, getQuarterEndDate, formatDateISO } from '../../utils/dates';
+import { getQuarterLabel, getQuarterEndDate, formatDateISO, formatDateDisplay } from '../../utils/dates';
 import { useOnboarding } from '../../context/OnboardingContext';
 
 const EPISODE_TYPE_OPTIONS: { label: string; value: EpisodeType }[] = [
@@ -22,10 +23,37 @@ export function EpisodeSetupScreen({ navigation }: OnboardingScreenProps<'Episod
   const defaultStartDate = formatDateISO(today);
 
   const [title, setTitle] = useState(state.episode.title ?? defaultTitle);
-  const [startDate] = useState(state.episode.start_date ?? defaultStartDate);
+  const [startDate, setStartDate] = useState(state.episode.start_date ?? defaultStartDate);
   const [endDate, setEndDate] = useState(state.episode.end_date ?? defaultEndDate);
   const [type, setType] = useState<EpisodeType>(state.episode.type ?? 'observational');
   const [specialSummary, setSpecialSummary] = useState(state.episode.special_summary ?? '');
+
+  // Date picker state
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+
+  const handleStartDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowStartPicker(false);
+    if (selectedDate) {
+      const newStart = formatDateISO(selectedDate);
+      setStartDate(newStart);
+      if (newStart > endDate) {
+        setEndDate(formatDateISO(getQuarterEndDate(selectedDate)));
+      }
+    }
+  };
+
+  const handleEndDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowEndPicker(false);
+    if (selectedDate) {
+      const newEnd = formatDateISO(selectedDate);
+      if (newEnd < startDate) {
+        Alert.alert('Invalid date', 'End date must be after start date.');
+        return;
+      }
+      setEndDate(newEnd);
+    }
+  };
 
   const handleNext = () => {
     updateEpisode({
@@ -44,7 +72,7 @@ export function EpisodeSetupScreen({ navigation }: OnboardingScreenProps<'Episod
   };
 
   return (
-    <ScreenContainer scrollable>
+    <ScreenContainer scrollable safeBottom>
       <View style={styles.header}>
         <Text style={styles.title}>Your First Episode</Text>
         <Text style={styles.subtitle}>
@@ -64,21 +92,43 @@ export function EpisodeSetupScreen({ navigation }: OnboardingScreenProps<'Episod
         <View style={styles.dateRow}>
           <View style={styles.dateField}>
             <Text style={styles.label}>Start</Text>
-            <View style={styles.dateDisplay}>
-              <Text style={styles.dateText}>{startDate}</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.dateDisplay}
+              onPress={() => setShowStartPicker(true)}
+            >
+              <Text style={styles.dateText}>{formatDateDisplay(startDate)}</Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.dateField}>
             <Text style={styles.label}>End</Text>
-            <View style={styles.dateDisplay}>
-              <Text style={styles.dateText}>{endDate}</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.dateDisplay}
+              onPress={() => setShowEndPicker(true)}
+            >
+              <Text style={styles.dateText}>{formatDateDisplay(endDate)}</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        <Text style={styles.dateHint}>
-          Tap to change dates (date picker coming soon)
-        </Text>
+        {showStartPicker && (
+          <DateTimePicker
+            value={new Date(startDate + 'T00:00:00')}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            onChange={handleStartDateChange}
+            themeVariant="dark"
+          />
+        )}
+        {showEndPicker && (
+          <DateTimePicker
+            value={new Date(endDate + 'T00:00:00')}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            onChange={handleEndDateChange}
+            minimumDate={new Date(startDate + 'T00:00:00')}
+            themeVariant="dark"
+          />
+        )}
 
         <View style={styles.typeSection}>
           <Text style={styles.sectionTitle}>What kind of episode is this?</Text>
@@ -164,11 +214,6 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: fontSize.md,
     color: colors.textPrimary,
-  },
-  dateHint: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    marginBottom: spacing.lg,
   },
   typeSection: {
     marginBottom: spacing.lg,

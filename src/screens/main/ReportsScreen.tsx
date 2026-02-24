@@ -6,7 +6,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Share,
   Alert,
   ScrollView,
 } from 'react-native';
@@ -18,6 +17,7 @@ import { Report, Episode } from '../../types';
 import { getAllEpisodes } from '../../db/repositories/episodes';
 import { getReportsByEpisode, deleteReport, markReportExported } from '../../db/repositories/reports';
 import { ShareSafeReport } from '../../services/reportBuilder';
+import { shareReportAsFile } from '../../services/reportSharing';
 
 interface ReportWithEpisode {
   report: Report;
@@ -68,20 +68,14 @@ export function ReportsScreen({ navigation }: MainTabScreenProps<'Reports'>) {
     }, [loadReports])
   );
 
-  const handleShare = async (report: Report) => {
+  const handleShare = async (item: ReportWithEpisode) => {
     try {
-      const result = await Share.share({
-        message: report.report_json,
-        title: 'Gordon n-of-1 Report',
-      });
-      
-      // Track export if shared successfully
-      if (result.action === Share.sharedAction) {
-        await markReportExported(report.id, 'share_sheet');
-        loadReports(); // Refresh to show export status
-      }
+      await shareReportAsFile(item.report, item.episode.title);
+      await markReportExported(item.report.id, 'share_sheet');
+      loadReports(); // Refresh to show export status
     } catch (error) {
       console.error('Failed to share:', error);
+      Alert.alert('Error', 'Failed to share report.');
     }
   };
 
@@ -286,7 +280,7 @@ export function ReportsScreen({ navigation }: MainTabScreenProps<'Reports'>) {
             <View style={styles.cardActions}>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => handleShare(report)}
+                onPress={() => handleShare(item)}
               >
                 <Text style={styles.actionButtonText}>Export / Share</Text>
               </TouchableOpacity>
