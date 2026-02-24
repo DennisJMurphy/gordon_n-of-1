@@ -70,13 +70,9 @@ export function ReportsScreen({ navigation }: MainTabScreenProps<'Reports'>) {
 
   const handleShare = async (item: ReportWithEpisode) => {
     try {
-      const shared = await shareReportAsFile(item.report, item.episode.title);
-      
-      // Track export if shared successfully
-      if (shared) {
-        await markReportExported(item.report.id, 'share_sheet');
-        loadReports(); // Refresh to show export status
-      }
+      await shareReportAsFile(item.report, item.episode.title);
+      await markReportExported(item.report.id, 'share_sheet');
+      loadReports(); // Refresh to show export status
     } catch (error) {
       console.error('Failed to share:', error);
       Alert.alert('Error', 'Failed to share report.');

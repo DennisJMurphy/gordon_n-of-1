@@ -1,4 +1,4 @@
-### General Guidlines
+### General Guidelines
 
 ## Stack 
 - Frontend: React Native (Expo), TypeScript strict

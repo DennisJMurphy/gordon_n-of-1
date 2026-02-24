@@ -33,7 +33,7 @@ export function EpisodeSetupScreen({ navigation }: OnboardingScreenProps<'Episod
   const [showEndPicker, setShowEndPicker] = useState(false);
 
   const handleStartDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShowStartPicker(false);
+    setShowStartPicker(false);
     if (selectedDate) {
       const newStart = formatDateISO(selectedDate);
       setStartDate(newStart);
@@ -44,7 +44,7 @@ export function EpisodeSetupScreen({ navigation }: OnboardingScreenProps<'Episod
   };
 
   const handleEndDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShowEndPicker(false);
+    setShowEndPicker(false);
     if (selectedDate) {
       const newEnd = formatDateISO(selectedDate);
       if (newEnd < startDate) {

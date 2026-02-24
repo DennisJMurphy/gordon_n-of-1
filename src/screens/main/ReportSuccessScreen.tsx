@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 // eslint-disable-next-line react-native/no-deprecated-modules
-import { Clipboard } from 'react-native';
+import Clipboard  from '@react-native-clipboard/clipboard';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ScreenContainer, Button } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
@@ -55,10 +55,8 @@ export function ReportSuccessScreen({ navigation, route }: Props) {
     if (!report || !episode) return;
     
     try {
-      const shared = await shareReportAsFile(report, episode.title);
-      if (shared) {
-        await markReportExported(report.id, 'share_sheet');
-      }
+      await shareReportAsFile(report, episode.title);
+      await markReportExported(report.id, 'share_sheet');
     } catch (error) {
       console.error('Failed to share:', error);
       Alert.alert('Error', 'Failed to share report');

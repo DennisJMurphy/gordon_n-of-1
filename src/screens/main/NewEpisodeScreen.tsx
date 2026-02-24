@@ -48,7 +48,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
   }, [startDate, titleWasEdited]);
 
   const handleStartDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShowStartPicker(false);
+    setShowStartPicker(false);
     if (selectedDate) {
       const newStart = formatDateISO(selectedDate);
       setStartDate(newStart);
@@ -60,7 +60,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
   };
 
   const handleEndDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShowEndPicker(false);
+    setShowEndPicker(false);
     if (selectedDate) {
       const newEnd = formatDateISO(selectedDate);
       if (newEnd < startDate) {
