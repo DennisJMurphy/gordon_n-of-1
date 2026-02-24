@@ -48,7 +48,7 @@ export function ReminderSetupScreen({ navigation }: OnboardingScreenProps<'Remin
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer safeBottom>
       <View style={styles.header}>
         <Text style={styles.title}>Weekly Reminders</Text>
         <Text style={styles.subtitle}>

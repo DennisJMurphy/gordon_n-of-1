@@ -100,7 +100,7 @@ export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'I
   };
 
   return (
-    <ScreenContainer scrollable>
+    <ScreenContainer scrollable safeBottom>
       <View style={styles.header}>
         <Text style={styles.title}>Define Your Intervention</Text>
         <Text style={styles.subtitle}>

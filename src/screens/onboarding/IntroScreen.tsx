@@ -7,7 +7,7 @@ import { OnboardingScreenProps } from '../../navigation/types';
 
 export function IntroScreen({ navigation }: OnboardingScreenProps<'Intro'>) {
   return (
-    <ScreenContainer>
+    <ScreenContainer safeBottom>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Image 

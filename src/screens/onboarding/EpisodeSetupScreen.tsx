@@ -72,7 +72,7 @@ export function EpisodeSetupScreen({ navigation }: OnboardingScreenProps<'Episod
   };
 
   return (
-    <ScreenContainer scrollable>
+    <ScreenContainer scrollable safeBottom>
       <View style={styles.header}>
         <Text style={styles.title}>Your First Episode</Text>
         <Text style={styles.subtitle}>

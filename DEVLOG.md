@@ -3,7 +3,7 @@ building on and responding to feedback
 added expo-sharing to allow similar data exporting experiences on ios and android
 also added react-native-clipboard since that was moved out of the react-native package
 NPM is reporting 20 high severity vulnerabilities but expo-doctor says all is ok, they're dev dependencies
-
+fixed issue on android where bottom navigation overlaps with the gordon UI (QA feedback)
 
 30-Jan-2026
 brainstormed the ideas for this app with ChatGPT 5.2,
