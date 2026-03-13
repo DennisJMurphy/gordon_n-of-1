@@ -9,6 +9,7 @@ import { PrivacyPreviewScreen } from '../screens/main/PrivacyPreviewScreen';
 import { ReportSuccessScreen } from '../screens/main/ReportSuccessScreen';
 import { NewEpisodeScreen } from '../screens/main/NewEpisodeScreen';
 import { InterventionSetupScreen } from '../screens/main/InterventionSetupScreen';
+import { EditBaselineScreen } from '../screens/main/EditBaselineScreen';
 import { colors, fontSize } from '../theme';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -69,6 +70,11 @@ export function HomeStackNavigator() {
           title: 'Report Generated',
           headerBackVisible: false, // Can't go back after generating
         }}
+      />
+      <Stack.Screen
+        name="EditBaseline"
+        component={EditBaselineScreen}
+        options={{ title: 'Edit Baseline Data' }}
       />
     </Stack.Navigator>
   );

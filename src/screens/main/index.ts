@@ -9,3 +9,4 @@ export { PrivacyPreviewScreen } from './PrivacyPreviewScreen';
 export { ReportSuccessScreen } from './ReportSuccessScreen';
 export { NewEpisodeScreen } from './NewEpisodeScreen';
 export { InterventionSetupScreen } from './InterventionSetupScreen';
+export { EditBaselineScreen } from './EditBaselineScreen';

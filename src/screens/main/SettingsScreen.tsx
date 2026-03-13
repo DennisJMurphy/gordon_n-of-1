@@ -59,6 +59,7 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
   const [showDayPicker, setShowDayPicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showPrivacyEditor, setShowPrivacyEditor] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -246,6 +247,18 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
         </Text>
       </View>
 
+      {/* Context Baseline Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Context Baseline</Text>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => navigation.navigate('Home', { screen: 'EditBaseline' })}
+        >
+          <Text style={styles.rowLabel}>Edit baseline data</Text>
+          <Text style={styles.rowValue}>Edit →</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Data Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Data</Text>
@@ -273,18 +286,18 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
           <Text style={styles.rowLabel}>Export all data</Text>
           <Text style={styles.rowValue}>→</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.row, styles.dangerRow]} 
-          onPress={handleWipeData}
-        >
-          <Text style={styles.dangerLabel}>Wipe all local data</Text>
-        </TouchableOpacity>
       </View>
 
       {/* About Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>About</Text>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => setShowAbout(true)}
+        >
+          <Text style={styles.rowLabel}>About Gordon</Text>
+          <Text style={styles.rowValue}>Info →</Text>
+        </TouchableOpacity>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>App version</Text>
           <Text style={styles.rowValue}>0.1.0</Text>
@@ -293,6 +306,12 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
           <Text style={styles.rowLabel}>Schema version</Text>
           <Text style={styles.rowValue}>0.1.0</Text>
         </View>
+        <TouchableOpacity 
+          style={[styles.row, styles.dangerRow]} 
+          onPress={handleWipeData}
+        >
+          <Text style={styles.dangerLabel}>Wipe all local data</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Footer */}
@@ -426,6 +445,31 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
             <TouchableOpacity
               style={styles.modalClose}
               onPress={() => setShowPrivacyEditor(false)}
+            >
+              <Text style={styles.modalCloseText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* About Gordon Modal */}
+      <Modal
+        visible={showAbout}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowAbout(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>About Gordon</Text>
+            <Text style={styles.aboutText}>
+              Gordon is a privacy-first tool for turning personal habits and self-experiments into structured, anonymized reports.
+            </Text>
+            <Text style={styles.aboutText}>
+              Instead of tracking everything all the time, Gordon summarizes meaningful periods of your life — "episodes" — and produces simple reports you can choose to share. The goal is to help you to contribute useful data to health and longevity research while keeping your personal information under control.
+            </Text>
+            <TouchableOpacity
+              style={styles.modalClose}
+              onPress={() => setShowAbout(false)}
             >
               <Text style={styles.modalCloseText}>Done</Text>
             </TouchableOpacity>
@@ -590,5 +634,11 @@ const styles = StyleSheet.create({
   privacyLabel: {
     fontSize: fontSize.md,
     color: colors.textPrimary,
+  },
+  aboutText: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    lineHeight: 22,
+    marginBottom: spacing.md,
   },
 });
