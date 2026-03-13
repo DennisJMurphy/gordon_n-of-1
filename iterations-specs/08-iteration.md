@@ -9,7 +9,7 @@ Instead of tracking everything all the time, Gordon summarizes meaningful period
 
 
 - the "About Gordon" text should appear in the ABOUT block, above "App version"
-    - a button should open a popup with the about text, conforming the the style of "Default sharing preferences" 
+    - a button should open a popup with the about text, conforming to the style of "Default sharing preferences" 
 - the app should also allow, from the settings screen, a person to change or update their baseline profile
     - a button 'Change/Update Baseline Profile' should appear beneath 'Export all data", and direct to the profile edit screen.
 - the 'wipe all local data" button should be at the bottom of the screen

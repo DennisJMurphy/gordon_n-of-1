@@ -112,6 +112,7 @@ export function EditBaselineScreen({ navigation }: HomeStackScreenProps<'EditBas
 
   useFocusEffect(
     useCallback(() => {
+      setLoading(true);
       (async () => {
         try {
           const baseline = await getBaselineContext();
@@ -164,7 +165,13 @@ export function EditBaselineScreen({ navigation }: HomeStackScreenProps<'EditBas
     }));
   };
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <ScreenContainer>
+        <Text style={{ color: colors.textMuted }}>Loading...</Text>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer scrollable>
