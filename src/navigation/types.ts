@@ -32,6 +32,7 @@ export type HomeStackParamList = {
   ReportSuccess: {
     reportId: string;
   };
+  EditBaseline: undefined;
 };
 
 // Main tab navigator
