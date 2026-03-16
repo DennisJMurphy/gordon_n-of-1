@@ -1,5 +1,5 @@
 // Mock for expo-sqlite used by repository tests.
-// Provides jest.fn() stubs for the three db methods the app uses.
+// Provides jest.fn() stubs for the db methods the app uses.
 
 const db = {
   getFirstAsync: jest.fn(),

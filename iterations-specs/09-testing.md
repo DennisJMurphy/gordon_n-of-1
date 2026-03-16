@@ -13,7 +13,7 @@ Add automated tests for existing business logic and data layer. Focus on pure fu
 
 ### Phase 1 — Setup
 - Install `jest`, `ts-jest`, `@types/jest`
-- Configure `jest.config.ts` for TypeScript + path aliases
+- Configure `jest.config.js` for path aliases
 - Create `src/__mocks__/expo-sqlite.ts` — mock `db` with `getFirstAsync`, `getAllAsync`, `runAsync`
 - Create `src/__mocks__/expo-crypto.ts` — mock `randomUUID` to return deterministic IDs
 - Verify a trivial test runs
