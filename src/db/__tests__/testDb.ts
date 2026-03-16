@@ -24,5 +24,5 @@ export function createTestDb() {
     },
   };
 
-  return { db, raw };
+  return { db, raw, close: () => raw.close() };
 }

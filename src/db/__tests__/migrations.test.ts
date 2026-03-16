@@ -7,8 +7,21 @@ function asSQLiteDb(db: ReturnType<typeof createTestDb>['db']) {
 }
 
 describe('runMigrations', () => {
+  let cleanup: (() => void)[] = [];
+
+  function makeTestDb() {
+    const testDb = createTestDb();
+    cleanup.push(testDb.close);
+    return testDb;
+  }
+
+  afterEach(() => {
+    cleanup.forEach((fn) => fn());
+    cleanup = [];
+  });
+
   it('creates all tables on a fresh database', async () => {
-    const { db, raw } = createTestDb();
+    const { db, raw } = makeTestDb();
     await runMigrations(asSQLiteDb(db));
 
     // All expected tables should exist
@@ -27,7 +40,7 @@ describe('runMigrations', () => {
   });
 
   it('sets meta version to the latest migration id', async () => {
-    const { db, raw } = createTestDb();
+    const { db, raw } = makeTestDb();
     await runMigrations(asSQLiteDb(db));
 
     const latestId = migrations[migrations.length - 1].id;
@@ -39,13 +52,13 @@ describe('runMigrations', () => {
   });
 
   it('is idempotent — running twice causes no errors', async () => {
-    const { db } = createTestDb();
+    const { db } = makeTestDb();
     await runMigrations(asSQLiteDb(db));
     await runMigrations(asSQLiteDb(db));
   });
 
   it('does not duplicate data when run twice', async () => {
-    const { db, raw } = createTestDb();
+    const { db, raw } = makeTestDb();
     await runMigrations(asSQLiteDb(db));
     await runMigrations(asSQLiteDb(db));
 
@@ -56,7 +69,7 @@ describe('runMigrations', () => {
   });
 
   it('tables are queryable after migration', async () => {
-    const { db, raw } = createTestDb();
+    const { db, raw } = makeTestDb();
     await runMigrations(asSQLiteDb(db));
 
     // Each table should accept a SELECT without error
@@ -74,7 +87,7 @@ describe('runMigrations', () => {
   });
 
   it('creates expected indexes', async () => {
-    const { db, raw } = createTestDb();
+    const { db, raw } = makeTestDb();
     await runMigrations(asSQLiteDb(db));
 
     const indexes = raw
@@ -89,7 +102,7 @@ describe('runMigrations', () => {
   });
 
   it('key columns exist with correct types (spot check)', async () => {
-    const { db, raw } = createTestDb();
+    const { db, raw } = makeTestDb();
     await runMigrations(asSQLiteDb(db));
 
     const episodeCols = raw.prepare('PRAGMA table_info(episodes)').all() as {
@@ -107,7 +120,7 @@ describe('runMigrations', () => {
   });
 
   it('JSON columns accept text values', async () => {
-    const { db, raw } = createTestDb();
+    const { db, raw } = makeTestDb();
     await runMigrations(asSQLiteDb(db));
 
     // Insert a row with JSON in a text column — should not error
@@ -125,7 +138,7 @@ describe('runMigrations', () => {
   });
 
   it('a bad migration fails loudly and does not advance version', async () => {
-    const { db, raw } = createTestDb();
+    const { db, raw } = makeTestDb();
 
     // Run legit migrations first
     await runMigrations(asSQLiteDb(db));
