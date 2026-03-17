@@ -128,8 +128,11 @@ export function getCurrentWeekStart(): string {
   const now = new Date();
   const day = now.getDay();
   const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
-  const monday = new Date(now.setDate(diff));
-  return monday.toISOString().split('T')[0];
+  const monday = new Date(now.getFullYear(), now.getMonth(), diff);
+  const year = monday.getFullYear();
+  const month = String(monday.getMonth() + 1).padStart(2, '0');
+  const d = String(monday.getDate()).padStart(2, '0');
+  return `${year}-${month}-${d}`;
 }
 
 /**

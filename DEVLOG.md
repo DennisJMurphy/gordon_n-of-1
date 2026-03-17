@@ -1,3 +1,7 @@
+17-Mar-2026
+catching up on tests, implemented phase 2 of 5 so far.
+deleted one test for triviality and complexity, hitting some blockers with expo-native dependencies that can't be tested in node, so mocking where it makes sense.
+
 24-Feb-2026
 building on and responding to feedback
 added expo-sharing to allow similar data exporting experiences on ios and android
