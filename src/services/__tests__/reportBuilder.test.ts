@@ -1,8 +1,6 @@
 import {
   buildShareSafeReport,
   buildPrivateReport,
-  ShareSafeReport,
-  PrivateReport,
   ReportOptions,
 } from '../reportBuilder';
 import {
