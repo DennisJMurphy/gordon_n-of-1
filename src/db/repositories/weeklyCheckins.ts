@@ -24,7 +24,7 @@ function rowToCheckin(row: WeeklyCheckinRow): WeeklyCheckin {
     adherence: row.adherence_json ? JSON.parse(row.adherence_json) : {},
     changes: row.changes_json ? JSON.parse(row.changes_json) : {},
     events: row.events_json ? JSON.parse(row.events_json) : [],
-    confidence: row.confidence as Confidence | undefined,
+    confidence: (row.confidence as Confidence) ?? undefined,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
