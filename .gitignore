@@ -40,3 +40,6 @@ reference_pics/
 # generated native folders
 /ios
 /android
+
+# coverage
+coverage/
