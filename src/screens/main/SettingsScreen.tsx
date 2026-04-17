@@ -429,7 +429,7 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
                 { key: 'weight_bracket_kg', label: 'Weight bracket' },
                 { key: 'relationship_status', label: 'Relationship status' },
                 { key: 'typical_cardio_min_per_week', label: 'Exercise level' },
-                { key: 'routine_summary', label: 'Routine summary' },
+                { key: 'routine', label: 'Routine summary' },
               ].map((field) => (
                 <View key={field.key} style={styles.privacyRow}>
                   <Text style={styles.privacyLabel}>{field.label}</Text>

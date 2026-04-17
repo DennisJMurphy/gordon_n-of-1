@@ -5,8 +5,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer, Button, TextInput } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { HomeStackScreenProps } from '../../navigation/types';
-import { Sex, RelationshipStatus, ShareDefaults } from '../../types';
+import { Sex, RelationshipStatus, ShareDefaults, RoutineItem } from '../../types';
 import { getBaselineContext, saveBaselineContext } from '../../db/repositories/baselineContext';
+import { RoutineItemEditor } from '../../components/RoutineItemEditor';
 
 const SEX_OPTIONS: { label: string; value: Sex }[] = [
   { label: 'Male', value: 'male' },
@@ -108,6 +109,7 @@ export function EditBaselineScreen({ navigation }: HomeStackScreenProps<'EditBas
   const [relationship, setRelationship] = useState<RelationshipStatus | undefined>();
   const [cardioMinutes, setCardioMinutes] = useState('');
   const [healthNotes, setHealthNotes] = useState('');
+  const [routine, setRoutine] = useState<RoutineItem[]>([]);
   const [shareDefaults, setShareDefaults] = useState<ShareDefaults>({});
 
   useFocusEffect(
@@ -124,6 +126,7 @@ export function EditBaselineScreen({ navigation }: HomeStackScreenProps<'EditBas
             setRelationship(baseline.relationship_status);
             setCardioMinutes(baseline.typical_cardio_min_per_week?.toString() ?? '');
             setHealthNotes(baseline.health_notes ?? '');
+            setRoutine(baseline.routine ?? []);
             setShareDefaults(baseline.share_defaults ?? {});
           }
         } catch (error) {
@@ -147,6 +150,7 @@ export function EditBaselineScreen({ navigation }: HomeStackScreenProps<'EditBas
         relationship_status: relationship,
         typical_cardio_min_per_week: cardioMinutes ? parseInt(cardioMinutes, 10) : undefined,
         health_notes: healthNotes || undefined,
+        routine,
         share_defaults: shareDefaults,
       });
       navigation.goBack();
@@ -265,6 +269,8 @@ export function EditBaselineScreen({ navigation }: HomeStackScreenProps<'EditBas
           />
         </FieldWithShare>
       </View>
+
+      <RoutineItemEditor items={routine} onChange={setRoutine} />
 
       <View style={styles.footer}>
         <Button title={saving ? 'Saving...' : 'Save'} onPress={handleSave} disabled={saving} />

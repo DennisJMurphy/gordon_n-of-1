@@ -131,6 +131,14 @@ export const migrations: Migration[] = [
       `,
     ],
   },
+  {
+    id: 2,
+    name: "add_custom_name_and_frequency_to_interventions",
+    sql: [
+      `ALTER TABLE interventions ADD COLUMN custom_name TEXT;`,
+      `ALTER TABLE interventions ADD COLUMN frequency TEXT;`,
+    ],
+  },
 ];
 
 export async function runMigrations(db: SQLite.SQLiteDatabase) {

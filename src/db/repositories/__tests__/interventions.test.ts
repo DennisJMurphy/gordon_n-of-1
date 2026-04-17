@@ -21,11 +21,13 @@ const sampleRow = {
   id: 'int-1',
   episode_id: 'ep-1',
   compound: 'nmn',
+  custom_name: null,
   dose: 500,
   unit: 'mg',
   route: 'oral',
   form: 'capsule',
   timing_json: '["morning"]',
+  frequency: 'daily',
   with_food: 'yes',
   brand: 'BrandX',
   product: 'NMN Pro',
@@ -86,7 +88,7 @@ describe('createIntervention', () => {
 
     const params = __mockDb.runAsync.mock.calls[0][1];
     expect(params[0]).toBe('test-uuid-1');             // id
-    expect(params[7]).toBe('["morning","evening"]');    // timing_json
+    expect(params[8]).toBe('["morning","evening"]');    // timing_json
   });
 
   it('passes null for optional fields when not provided', async () => {
@@ -106,10 +108,10 @@ describe('createIntervention', () => {
     });
 
     const params = __mockDb.runAsync.mock.calls[0][1];
-    expect(params[3]).toBeNull();  // dose
-    expect(params[4]).toBeNull();  // unit
-    expect(params[9]).toBeNull();  // brand
-    expect(params[10]).toBeNull(); // product
+    expect(params[4]).toBeNull();  // dose
+    expect(params[5]).toBeNull();  // unit
+    expect(params[11]).toBeNull(); // brand
+    expect(params[12]).toBeNull(); // product
   });
 });
 
@@ -142,8 +144,8 @@ describe('updateIntervention', () => {
 
     const params = __mockDb.runAsync.mock.calls[0][1];
     expect(params[0]).toBe('nmn');          // compound (existing)
-    expect(params[1]).toBe(1000);           // dose (updated)
-    expect(params[5]).toBe('["morning"]');  // timing (existing, serialized)
+    expect(params[2]).toBe(1000);           // dose (updated)
+    expect(params[6]).toBe('["morning"]');  // timing (existing, serialized)
   });
 
   it('replaces timing when provided', async () => {
@@ -155,7 +157,7 @@ describe('updateIntervention', () => {
     await updateIntervention('int-1', { timing: ['evening'] });
 
     const params = __mockDb.runAsync.mock.calls[0][1];
-    expect(params[5]).toBe('["evening"]');
+    expect(params[6]).toBe('["evening"]');
   });
 });
 

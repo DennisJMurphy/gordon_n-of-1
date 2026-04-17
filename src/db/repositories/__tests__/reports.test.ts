@@ -21,9 +21,9 @@ afterEach(() => jest.useRealTimers());
 const sampleRow = {
   id: 'rpt-1',
   episode_id: 'ep-1',
-  schema_version: '0.1.0',
-  generated_at: '2026-03-15T12:00:00.000Z',
-  report_json: '{"schema_version":"0.1.0"}',
+  schema_version: '0.2.0',
+  generated_at: '2026-01-15T12:00:00.000Z',
+  report_json: '{"schema_version":"0.2.0"}',
   private_json: '{"full":true}',
   exported_to: null,
   exported_at: null,
@@ -36,7 +36,7 @@ describe('getReportsByEpisode', () => {
     __mockDb.getAllAsync.mockResolvedValueOnce([sampleRow]);
     const result = await getReportsByEpisode('ep-1');
     expect(result).toHaveLength(1);
-    expect(result[0].report_json).toBe('{"schema_version":"0.1.0"}');
+    expect(result[0].report_json).toBe('{"schema_version":"0.2.0"}');
     expect(result[0].exported_to).toBeUndefined(); // null → undefined
   });
 
@@ -106,9 +106,9 @@ describe('createReport', () => {
 
     const result = await createReport({
       episode_id: 'ep-1',
-      schema_version: '0.1.0',
+      schema_version: '0.2.0',
       generated_at: '2026-03-15T12:00:00.000Z',
-      report_json: '{"schema_version":"0.1.0"}',
+      report_json: '{"schema_version":"0.2.0"}',
       private_json: '{"full":true}',
     });
 
@@ -117,7 +117,7 @@ describe('createReport', () => {
     const params = __mockDb.runAsync.mock.calls[0][1];
     expect(params[0]).toBe('test-uuid-1');                  // id
     expect(params[1]).toBe('ep-1');                         // episode_id
-    expect(params[4]).toBe('{"schema_version":"0.1.0"}');   // report_json
+    expect(params[4]).toBe('{"schema_version":"0.2.0"}');   // report_json
     expect(params[5]).toBe('{"full":true}');                 // private_json
   });
 

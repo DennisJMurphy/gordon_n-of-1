@@ -39,7 +39,7 @@ function makeBaseline(overrides: Partial<BaselineContext> = {}): BaselineContext
     relationship_status: 'single',
     typical_cardio_min_per_week: 150,
     health_notes: 'No known issues',
-    routine: [{ name: 'Vitamin D', duration: 'months', regularity: 'daily' }],
+    routine: [{ compound: 'other', custom_name: 'Vitamin D', timing: [], frequency: 'daily', consistency_pct: 99 }],
     share_defaults: {
       sex: true,
       age_bracket: true,
@@ -255,7 +255,7 @@ describe('buildShareSafeReport', () => {
 
   it('includes schema_version and generated_at', () => {
     const report = buildShareSafeReport(null, ep, [], [], [], defaultOptions);
-    expect(report.schema_version).toBe('0.1.0');
+    expect(report.schema_version).toBe('0.2.0');
     // generated_at comes from new Date().toISOString(), so use the same expectation
     expect(report.generated_at).toBe(new Date(2026, 2, 17).toISOString());
   });
@@ -331,8 +331,8 @@ describe('buildShareSafeReport', () => {
   it('includes routine_summary (count only) when routine is shared', () => {
     const baseline = makeBaseline({
       routine: [
-        { name: 'Vitamin D', duration: 'months', regularity: 'daily' },
-        { name: 'Fish oil', duration: 'years', regularity: 'daily' },
+        { compound: 'other', custom_name: 'Vitamin D', timing: [], frequency: 'daily' },
+        { compound: 'omega3', timing: [], frequency: 'daily' },
       ],
       share_defaults: { routine: true },
     });
@@ -399,7 +399,7 @@ describe('buildPrivateReport', () => {
 
   it('includes all share-safe fields', () => {
     const report = buildPrivateReport(baseline, ep, [intervention], checkins, notes, defaultOptions);
-    expect(report.schema_version).toBe('0.1.0');
+    expect(report.schema_version).toBe('0.2.0');
     expect(report.episode.type).toBe('intervention');
     expect(report.adherence_summary.length).toBe(1);
   });

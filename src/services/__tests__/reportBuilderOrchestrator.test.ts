@@ -73,7 +73,7 @@ describe('generateReports', () => {
     expect(mockGetNotesByEpisode).toHaveBeenCalledWith('ep-1');
 
     expect(result.shareSafe).toBeDefined();
-    expect(result.shareSafe.schema_version).toBe('0.1.0');
+    expect(result.shareSafe.schema_version).toBe('0.2.0');
     expect(result.private).toBeDefined();
     expect(result.private.episode_dates).toEqual({
       start_date: '2026-01-01',
@@ -134,7 +134,7 @@ describe('generateAndSaveReports', () => {
     mockCreateReport.mockResolvedValue({
       id: 'rpt-1',
       episode_id: 'ep-1',
-      schema_version: '0.1.0',
+      schema_version: '0.2.0',
       generated_at: '2026-03-15T12:00:00.000Z',
       report_json: '{}',
       private_json: '{}',
@@ -147,8 +147,8 @@ describe('generateAndSaveReports', () => {
 
     const createArg = mockCreateReport.mock.calls[0][0];
     expect(createArg.episode_id).toBe('ep-1');
-    expect(createArg.schema_version).toBe('0.1.0');
-    expect(JSON.parse(createArg.report_json)).toHaveProperty('schema_version', '0.1.0');
+    expect(createArg.schema_version).toBe('0.2.0');
+    expect(JSON.parse(createArg.report_json)).toHaveProperty('schema_version', '0.2.0');
     expect(JSON.parse(createArg.private_json!)).toHaveProperty('episode_dates');
   });
 });

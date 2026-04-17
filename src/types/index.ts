@@ -11,16 +11,24 @@ export type Route = 'oral' | 'sublingual';
 export type Form = 'powder' | 'capsule' | 'liquid' | 'food';
 export type Compound = 'nmn' | 'tmg' | 'omega3' | 'magnesium' | 'creatine' | 'collagen' | 'other';
 export type Timing = 'upon_waking' | 'morning' | 'midday' | 'afternoon' | 'evening' | 'before_bed';
-export type Duration = 'days' | 'weeks' | 'months' | 'years';
-export type Regularity = 'rarely' | 'some_days' | 'most_days' | 'daily';
+export type Frequency = 'daily' | 'weekly' | 'monthly' | 'quarterly';
 export type AdherenceBin = 'every_day' | 'most_days' | 'some_days' | 'rarely' | 'not_at_all';
 
-// Routine item for baseline context
+// Routine item for baseline context — standard/habitual interventions
 export interface RoutineItem {
-  name: string;
-  duration: Duration;
-  regularity: Regularity;
-  source?: 'supplement' | 'food' | 'mixed';
+  compound: Compound;
+  custom_name?: string;
+  dose?: number;
+  unit?: string;
+  route?: Route;
+  form?: Form;
+  timing: Timing[];
+  frequency?: Frequency;
+  with_food?: WithFood;
+  brand?: string;
+  product?: string;
+  start_date?: string; // YYYY-MM-DD or YYYY-MM
+  consistency_pct?: number; // 0-100
   notes?: string;
 }
 
@@ -70,11 +78,13 @@ export interface Intervention {
   id: string;
   episode_id: string;
   compound: Compound;
+  custom_name?: string;
   dose?: number;
   unit?: string;
   route?: Route;
   form?: Form;
   timing: Timing[];
+  frequency?: Frequency;
   with_food?: WithFood;
   brand?: string;
   product?: string;

@@ -4,8 +4,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 import { ScreenContainer, Button, TextInput } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { OnboardingScreenProps } from '../../navigation/types';
-import { Sex, RelationshipStatus, ShareDefaults } from '../../types';
+import { Sex, RelationshipStatus, ShareDefaults, RoutineItem } from '../../types';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { RoutineItemEditor } from '../../components/RoutineItemEditor';
 
 const SEX_OPTIONS: { label: string; value: Sex }[] = [
   { label: 'Male', value: 'male' },
@@ -111,6 +112,7 @@ export function BaselineContextScreen({ navigation }: OnboardingScreenProps<'Bas
     state.baseline.typical_cardio_min_per_week?.toString() ?? ''
   );
   const [healthNotes, setHealthNotes] = useState(state.baseline.health_notes ?? '');
+  const [routine, setRoutine] = useState<RoutineItem[]>(state.baseline.routine ?? []);
 
   const [shareDefaults, setShareDefaults] = useState<ShareDefaults>(
     state.baseline.share_defaults ?? {}
@@ -125,6 +127,7 @@ export function BaselineContextScreen({ navigation }: OnboardingScreenProps<'Bas
       relationship_status: relationship,
       typical_cardio_min_per_week: cardioMinutes ? parseInt(cardioMinutes, 10) : undefined,
       health_notes: healthNotes || undefined,
+      routine,
       share_defaults: shareDefaults,
     });
     navigation.navigate('EpisodeSetup');
@@ -230,6 +233,8 @@ export function BaselineContextScreen({ navigation }: OnboardingScreenProps<'Bas
           />
         </FieldWithShare>
       </View>
+
+      <RoutineItemEditor items={routine} onChange={setRoutine} />
 
       <View style={styles.footer}>
         <Button title="Continue" onPress={handleNext} />

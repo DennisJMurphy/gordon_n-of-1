@@ -25,7 +25,7 @@ const sampleRow = {
   relationship_status: 'single',
   typical_cardio_min_per_week: 150,
   health_notes: 'None',
-  routine_json: '[{"name":"Vitamin D","duration":"months","regularity":"daily"}]',
+  routine_json: '[{"compound":"other","custom_name":"Vitamin D","timing":[],"frequency":"daily"}]',
   share_defaults_json: '{"sex":true,"age_bracket":true}',
 };
 
@@ -43,7 +43,7 @@ describe('getBaselineContext', () => {
     const result = await getBaselineContext();
     expect(result).not.toBeNull();
     expect(result!.sex).toBe('male');
-    expect(result!.routine).toEqual([{ name: 'Vitamin D', duration: 'months', regularity: 'daily' }]);
+    expect(result!.routine).toEqual([{ compound: 'other', custom_name: 'Vitamin D', timing: [], frequency: 'daily' }]);
     expect(result!.share_defaults).toEqual({ sex: true, age_bracket: true });
   });
 
@@ -91,7 +91,7 @@ describe('saveBaselineContext', () => {
     const result = await saveBaselineContext({
       sex: 'male',
       age_bracket: '30-39',
-      routine: [{ name: 'Vitamin D', duration: 'months', regularity: 'daily' }],
+      routine: [{ compound: 'other', custom_name: 'Vitamin D', frequency: 'daily', timing: [] }],
     });
 
     expect(result.id).toBe('test-uuid-1');
@@ -102,7 +102,7 @@ describe('saveBaselineContext', () => {
     expect(params[3]).toBe('male');          // sex
     expect(params[4]).toBe('30-39');         // age_bracket
     // routine_json
-    expect(params[10]).toBe('[{"name":"Vitamin D","duration":"months","regularity":"daily"}]');
+    expect(params[10]).toBe('[{"compound":"other","custom_name":"Vitamin D","frequency":"daily","timing":[]}]');
     // share_defaults_json
     expect(params[11]).toBe('{}');
   });
