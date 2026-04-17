@@ -109,11 +109,13 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         await createIntervention({
           episode_id: episode.id,
           compound: intervention.compound,
+          custom_name: intervention.custom_name,
           dose: intervention.dose,
           unit: intervention.unit,
           route: intervention.route,
           form: intervention.form,
           timing: intervention.timing ?? [],
+          frequency: intervention.frequency,
           with_food: intervention.with_food,
           brand: intervention.brand,
           product: intervention.product,

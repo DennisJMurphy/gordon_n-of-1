@@ -97,10 +97,10 @@ export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'I
     );
   };
 
-  const handleAddCurrent = () => {
+  const handleAddCurrent = (): boolean => {
     if (compound === 'other' && !customName.trim()) {
       Alert.alert('Name required', 'Please enter a name for this intervention.');
-      return;
+      return false;
     }
 
     const primary: Partial<Intervention> = {
@@ -132,12 +132,13 @@ export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'I
     }
 
     resetForm();
+    return true;
   };
 
   const handleNext = () => {
     // If form has data and nothing saved yet, save it first
     if (state.interventions.length === 0 && compound) {
-      handleAddCurrent();
+      if (!handleAddCurrent()) return;
     }
     navigation.navigate('ReminderSetup');
   };
