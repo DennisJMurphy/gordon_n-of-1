@@ -1,6 +1,6 @@
 // src/db/repositories/interventions.ts
 import { db } from '../index';
-import { Intervention, Compound, Route, Form, WithFood, Timing } from '../../types';
+import { Intervention, Compound, Route, Form, WithFood, Timing, Frequency } from '../../types';
 import { generateId } from '../../utils/uuid';
 import { getISOTimestamp } from '../../utils/dates';
 
@@ -8,11 +8,13 @@ interface InterventionRow {
   id: string;
   episode_id: string;
   compound: string;
+  custom_name: string | null;
   dose: number | null;
   unit: string | null;
   route: string | null;
   form: string | null;
   timing_json: string | null;
+  frequency: string | null;
   with_food: string | null;
   brand: string | null;
   product: string | null;
@@ -26,11 +28,13 @@ function rowToIntervention(row: InterventionRow): Intervention {
     id: row.id,
     episode_id: row.episode_id,
     compound: row.compound as Compound,
+    custom_name: row.custom_name ?? undefined,
     dose: row.dose ?? undefined,
     unit: row.unit ?? undefined,
     route: row.route as Route | undefined,
     form: row.form as Form | undefined,
     timing: row.timing_json ? JSON.parse(row.timing_json) : [],
+    frequency: (row.frequency as Frequency) ?? undefined,
     with_food: row.with_food as WithFood | undefined,
     brand: row.brand ?? undefined,
     product: row.product ?? undefined,
@@ -64,18 +68,20 @@ export async function createIntervention(
 
   await db.runAsync(
     `INSERT INTO interventions (
-      id, episode_id, compound, dose, unit, route, form,
-      timing_json, with_food, brand, product, notes, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id, episode_id, compound, custom_name, dose, unit, route, form,
+      timing_json, frequency, with_food, brand, product, notes, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       data.episode_id,
       data.compound,
+      data.custom_name ?? null,
       data.dose ?? null,
       data.unit ?? null,
       data.route ?? null,
       data.form ?? null,
       JSON.stringify(data.timing ?? []),
+      data.frequency ?? null,
       data.with_food ?? null,
       data.brand ?? null,
       data.product ?? null,
@@ -100,11 +106,13 @@ export async function updateIntervention(
   await db.runAsync(
     `UPDATE interventions SET
       compound = ?,
+      custom_name = ?,
       dose = ?,
       unit = ?,
       route = ?,
       form = ?,
       timing_json = ?,
+      frequency = ?,
       with_food = ?,
       brand = ?,
       product = ?,
@@ -113,11 +121,13 @@ export async function updateIntervention(
     WHERE id = ?`,
     [
       data.compound ?? existing.compound,
+      data.custom_name ?? existing.custom_name ?? null,
       data.dose ?? existing.dose ?? null,
       data.unit ?? existing.unit ?? null,
       data.route ?? existing.route ?? null,
       data.form ?? existing.form ?? null,
       JSON.stringify(data.timing ?? existing.timing ?? []),
+      data.frequency ?? existing.frequency ?? null,
       data.with_food ?? existing.with_food ?? null,
       data.brand ?? existing.brand ?? null,
       data.product ?? existing.product ?? null,

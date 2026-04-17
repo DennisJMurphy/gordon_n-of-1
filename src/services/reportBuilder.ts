@@ -32,7 +32,20 @@ export interface ShareSafeReport {
     weight_bracket_kg?: string;
     relationship_status?: string;
     typical_cardio_min_per_week?: number;
-    routine_summary?: string; // Anonymized summary
+    routine_summary?: string;
+    standard_interventions?: {
+      compound: string;
+      custom_name?: string;
+      dose?: number;
+      unit?: string;
+      route?: string;
+      form?: string;
+      timing: string[];
+      frequency?: string;
+      with_food?: string;
+      start_date?: string;
+      consistency_pct?: number;
+    }[];
   };
   
   // Episode metadata (relative dates)
@@ -45,11 +58,13 @@ export interface ShareSafeReport {
   // Intervention summaries (no brand names in share-safe)
   interventions: {
     compound: string;
+    custom_name?: string;
     dose?: number;
     unit?: string;
     route?: string;
     form?: string;
     timing: string[];
+    frequency?: string;
     with_food?: string;
   }[];
   
@@ -200,6 +215,20 @@ export function buildShareSafeReport(
     if (shareSettings.typical_cardio_min_per_week) participant.typical_cardio_min_per_week = baseline.typical_cardio_min_per_week;
     if (shareSettings.routine && baseline.routine.length > 0) {
       participant.routine_summary = `${baseline.routine.length} tracked habits/supplements`;
+      participant.standard_interventions = baseline.routine.map(r => ({
+        compound: r.compound,
+        custom_name: r.custom_name,
+        dose: r.dose,
+        unit: r.unit,
+        route: r.route,
+        form: r.form,
+        timing: r.timing,
+        frequency: r.frequency,
+        with_food: r.with_food,
+        start_date: r.start_date,
+        consistency_pct: r.consistency_pct,
+        // brand/product stripped for share-safe
+      }));
     }
     
     // Remove empty participant
@@ -211,11 +240,13 @@ export function buildShareSafeReport(
   // Build interventions (share-safe: no brand/product)
   const interventionsSafe = interventions.map(i => ({
     compound: i.compound,
+    custom_name: i.custom_name,
     dose: i.dose,
     unit: i.unit,
     route: i.route,
     form: i.form,
     timing: i.timing,
+    frequency: i.frequency,
     with_food: i.with_food,
   }));
   

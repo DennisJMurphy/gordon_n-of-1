@@ -1,3 +1,6 @@
+17-Apr-2026
+completed the initial test suite
+
 17-Mar-2026
 catching up on tests, implemented phase 2 of 5 so far.
 deleted one test for triviality and complexity, hitting some blockers with expo-native dependencies that can't be tested in node, so mocking where it makes sense.

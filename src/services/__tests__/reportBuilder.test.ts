@@ -39,7 +39,7 @@ function makeBaseline(overrides: Partial<BaselineContext> = {}): BaselineContext
     relationship_status: 'single',
     typical_cardio_min_per_week: 150,
     health_notes: 'No known issues',
-    routine: [{ name: 'Vitamin D', duration: 'months', regularity: 'daily' }],
+    routine: [{ compound: 'other', custom_name: 'Vitamin D', timing: [], frequency: 'daily', consistency_pct: 99 }],
     share_defaults: {
       sex: true,
       age_bracket: true,
@@ -331,8 +331,8 @@ describe('buildShareSafeReport', () => {
   it('includes routine_summary (count only) when routine is shared', () => {
     const baseline = makeBaseline({
       routine: [
-        { name: 'Vitamin D', duration: 'months', regularity: 'daily' },
-        { name: 'Fish oil', duration: 'years', regularity: 'daily' },
+        { compound: 'other', custom_name: 'Vitamin D', timing: [], frequency: 'daily' },
+        { compound: 'omega3', timing: [], frequency: 'daily' },
       ],
       share_defaults: { routine: true },
     });

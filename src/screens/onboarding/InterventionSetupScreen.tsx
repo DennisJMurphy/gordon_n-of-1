@@ -1,10 +1,10 @@
 // src/screens/onboarding/InterventionSetupScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { ScreenContainer, Button, Select, TextInput } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { OnboardingScreenProps } from '../../navigation/types';
-import { Compound, Route, Form, WithFood, Timing, Intervention } from '../../types';
+import { Compound, Route, Form, WithFood, Timing, Frequency, Intervention } from '../../types';
 import { useOnboarding } from '../../context/OnboardingContext';
 
 const COMPOUND_OPTIONS: { label: string; value: Compound }[] = [
@@ -38,29 +38,58 @@ const TIMING_OPTIONS: { label: string; value: Timing }[] = [
   { label: 'Before bed', value: 'before_bed' },
 ];
 
+const FREQUENCY_OPTIONS: { label: string; value: Frequency }[] = [
+  { label: 'Daily', value: 'daily' },
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Quarterly', value: 'quarterly' },
+];
+
 const WITH_FOOD_OPTIONS: { label: string; value: WithFood }[] = [
   { label: 'Yes', value: 'yes' },
   { label: 'No', value: 'no' },
   { label: 'Mixed', value: 'mixed' },
 ];
 
+function getInterventionLabel(i: Partial<Intervention>): string {
+  const name = i.compound === 'other' && i.custom_name ? i.custom_name : (i.compound?.toUpperCase() ?? '?');
+  const doseStr = i.dose ? ` ${i.dose}${i.unit || ''}` : '';
+  return `${name}${doseStr}`;
+}
+
 export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'InterventionSetup'>) {
   const { state, addIntervention, removeIntervention } = useOnboarding();
 
-  // Primary intervention (NMN by default for this app)
   const [compound, setCompound] = useState<Compound>('nmn');
+  const [customName, setCustomName] = useState('');
   const [dose, setDose] = useState('');
   const [unit, setUnit] = useState('mg');
   const [route, setRoute] = useState<Route>('oral');
   const [form, setForm] = useState<Form>('powder');
   const [timing, setTiming] = useState<Timing[]>(['upon_waking']);
+  const [frequency, setFrequency] = useState<Frequency>('daily');
   const [withFood, setWithFood] = useState<WithFood>('no');
   const [brand, setBrand] = useState('');
   const [product, setProduct] = useState('');
 
-  // Show TMG as common co-intervention
   const [includeTmg, setIncludeTmg] = useState(false);
   const [tmgDose, setTmgDose] = useState('');
+
+  const resetForm = () => {
+    setCompound('nmn');
+    setCustomName('');
+    setDose('');
+    setUnit('mg');
+    setRoute('oral');
+    setForm('powder');
+    setTiming(['upon_waking']);
+    setFrequency('daily');
+    setWithFood('no');
+    setBrand('');
+    setProduct('');
+    setIncludeTmg(false);
+    setTmgDose('');
+  };
 
   const toggleTiming = (t: Timing) => {
     setTiming((prev) =>
@@ -68,22 +97,27 @@ export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'I
     );
   };
 
-  const handleNext = () => {
-    // Add primary intervention
+  const handleAddCurrent = () => {
+    if (compound === 'other' && !customName.trim()) {
+      Alert.alert('Name required', 'Please enter a name for this intervention.');
+      return;
+    }
+
     const primary: Partial<Intervention> = {
       compound,
+      custom_name: compound === 'other' ? customName.trim() : undefined,
       dose: dose ? parseFloat(dose) : undefined,
       unit: unit || undefined,
       route,
       form,
       timing,
+      frequency,
       with_food: withFood,
       brand: brand || undefined,
       product: product || undefined,
     };
     addIntervention(primary);
 
-    // Add TMG if included
     if (includeTmg) {
       addIntervention({
         compound: 'tmg',
@@ -92,11 +126,24 @@ export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'I
         route: 'oral',
         form: 'powder',
         timing,
+        frequency: 'daily',
         with_food: withFood,
       });
     }
 
+    resetForm();
+  };
+
+  const handleNext = () => {
+    // If form has data and nothing saved yet, save it first
+    if (state.interventions.length === 0 && compound) {
+      handleAddCurrent();
+    }
     navigation.navigate('ReminderSetup');
+  };
+
+  const handleSaveAndAddAnother = () => {
+    handleAddCurrent();
   };
 
   return (
@@ -104,9 +151,24 @@ export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'I
       <View style={styles.header}>
         <Text style={styles.title}>Define Your Intervention</Text>
         <Text style={styles.subtitle}>
-          What are you trying? This helps structure your weekly check-ins.
+          What are you trying? You can add multiple interventions.
         </Text>
       </View>
+
+      {/* Saved interventions list */}
+      {state.interventions.length > 0 && (
+        <View style={styles.savedSection}>
+          <Text style={styles.savedTitle}>Added ({state.interventions.length})</Text>
+          {state.interventions.map((item, index) => (
+            <View key={index} style={styles.savedItem}>
+              <Text style={styles.savedItemText}>{getInterventionLabel(item)}</Text>
+              <TouchableOpacity onPress={() => removeIntervention(index)}>
+                <Text style={styles.deleteText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
 
       <View style={styles.form}>
         <Select
@@ -115,6 +177,15 @@ export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'I
           value={compound}
           onChange={setCompound}
         />
+
+        {compound === 'other' && (
+          <TextInput
+            label="Name"
+            value={customName}
+            onChangeText={setCustomName}
+            placeholder="e.g., Laser cap, Red light therapy"
+          />
+        )}
 
         <View style={styles.doseRow}>
           <View style={styles.doseField}>
@@ -176,6 +247,13 @@ export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'I
         </View>
 
         <Select
+          label="Frequency"
+          options={FREQUENCY_OPTIONS}
+          value={frequency}
+          onChange={setFrequency}
+        />
+
+        <Select
           label="With food?"
           options={WITH_FOOD_OPTIONS}
           value={withFood}
@@ -196,41 +274,61 @@ export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'I
           placeholder="e.g., Uthever NMN"
         />
 
-        {/* TMG co-intervention */}
-        <View style={styles.coInterventionSection}>
-          <TouchableOpacity
-            style={styles.coInterventionToggle}
-            onPress={() => setIncludeTmg(!includeTmg)}
-          >
-            <View style={[styles.checkbox, includeTmg && styles.checkboxChecked]}>
-              {includeTmg && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <Text style={styles.coInterventionLabel}>
-              Also taking TMG (common with NMN)
-            </Text>
-          </TouchableOpacity>
+        {/* TMG co-intervention — only shown when primary is NMN */}
+        {compound === 'nmn' && (
+          <View style={styles.coInterventionSection}>
+            <TouchableOpacity
+              style={styles.coInterventionToggle}
+              onPress={() => setIncludeTmg(!includeTmg)}
+            >
+              <View style={[styles.checkbox, includeTmg && styles.checkboxChecked]}>
+                {includeTmg && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.coInterventionLabel}>
+                Also taking TMG (common with NMN)
+              </Text>
+            </TouchableOpacity>
 
-          {includeTmg && (
-            <View style={styles.tmgDoseRow}>
-              <TextInput
-                label="TMG dose (mg)"
-                value={tmgDose}
-                onChangeText={setTmgDose}
-                keyboardType="numeric"
-                placeholder="500"
-              />
-            </View>
-          )}
-        </View>
+            {includeTmg && (
+              <View style={styles.tmgDoseRow}>
+                <TextInput
+                  label="TMG dose (mg)"
+                  value={tmgDose}
+                  onChangeText={setTmgDose}
+                  keyboardType="numeric"
+                  placeholder="500"
+                />
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       <View style={styles.footer}>
-        <Button title="Continue" onPress={handleNext} />
-        <Button
-          title="Skip intervention details"
-          variant="ghost"
-          onPress={() => navigation.navigate('ReminderSetup')}
-        />
+        {state.interventions.length > 0 ? (
+          <>
+            <Button title="Continue" onPress={() => navigation.navigate('ReminderSetup')} />
+            <Button
+              title="Save & Add Another"
+              variant="secondary"
+              onPress={handleSaveAndAddAnother}
+            />
+          </>
+        ) : (
+          <>
+            <Button title="Continue" onPress={handleNext} />
+            <Button
+              title="Save & Add Another"
+              variant="secondary"
+              onPress={handleSaveAndAddAnother}
+            />
+            <Button
+              title="Skip intervention details"
+              variant="ghost"
+              onPress={() => navigation.navigate('ReminderSetup')}
+            />
+          </>
+        )}
       </View>
     </ScreenContainer>
   );
@@ -251,6 +349,36 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
     lineHeight: 22,
+  },
+  savedSection: {
+    marginBottom: spacing.lg,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+  },
+  savedTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  savedItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  savedItemText: {
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  deleteText: {
+    fontSize: fontSize.md,
+    color: colors.error,
+    paddingHorizontal: spacing.sm,
   },
   form: {
     flex: 1,
