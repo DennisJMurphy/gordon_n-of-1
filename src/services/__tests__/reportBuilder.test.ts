@@ -255,7 +255,7 @@ describe('buildShareSafeReport', () => {
 
   it('includes schema_version and generated_at', () => {
     const report = buildShareSafeReport(null, ep, [], [], [], defaultOptions);
-    expect(report.schema_version).toBe('0.1.0');
+    expect(report.schema_version).toBe('0.2.0');
     // generated_at comes from new Date().toISOString(), so use the same expectation
     expect(report.generated_at).toBe(new Date(2026, 2, 17).toISOString());
   });
@@ -399,7 +399,7 @@ describe('buildPrivateReport', () => {
 
   it('includes all share-safe fields', () => {
     const report = buildPrivateReport(baseline, ep, [intervention], checkins, notes, defaultOptions);
-    expect(report.schema_version).toBe('0.1.0');
+    expect(report.schema_version).toBe('0.2.0');
     expect(report.episode.type).toBe('intervention');
     expect(report.adherence_summary.length).toBe(1);
   });
