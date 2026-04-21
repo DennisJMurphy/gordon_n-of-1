@@ -30,6 +30,8 @@ import {
 } from '../../services/dataManagement';
 import { getBaselineContext, saveBaselineContext } from '../../db/repositories/baselineContext';
 import { BaselineContext } from '../../types';
+import { SCHEMA_VERSION } from '../../services/reportBuilder';
+import { version as APP_VERSION } from '../../../package.json';
 
 const DAYS = [
   { label: 'Sunday', value: 0 },
@@ -300,11 +302,11 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
         </TouchableOpacity>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>App version</Text>
-          <Text style={styles.rowValue}>0.1.0</Text>
+          <Text style={styles.rowValue}>{APP_VERSION}</Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Schema version</Text>
-          <Text style={styles.rowValue}>0.1.0</Text>
+          <Text style={styles.rowValue}>{SCHEMA_VERSION}</Text>
         </View>
         <TouchableOpacity 
           style={[styles.row, styles.dangerRow]} 

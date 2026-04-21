@@ -1,3 +1,6 @@
+21-Apr-2026
+Changed hardcoded versions to reflect package and schema versions
+
 17-Apr-2026
 completed the initial test suite
 added some tracking features for baseline experimentation
