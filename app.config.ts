@@ -30,6 +30,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: ['expo-sqlite',
     '@react-native-community/datetimepicker',
+    ['expo-notifications', {
+      icon: './assets/icon.png',
+      color: '#6366f1',
+      iosDisplayInForeground: true,
+    }],
     ['expo-splash-screen', {
       image: './assets/splash-icon.png',
       imageWidth: 200,

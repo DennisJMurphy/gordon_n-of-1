@@ -8,8 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-// eslint-disable-next-line react-native/no-deprecated-modules
-import Clipboard  from '@react-native-clipboard/clipboard';
+import * as Clipboard from 'expo-clipboard';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ScreenContainer, Button } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
@@ -63,10 +62,10 @@ export function ReportSuccessScreen({ navigation, route }: Props) {
     }
   };
   
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!report) return;
     const prettyJson = JSON.stringify(JSON.parse(report.report_json), null, 2);
-    Clipboard.setString(prettyJson);
+    await Clipboard.setStringAsync(prettyJson);
     Alert.alert('Copied!', 'Report JSON copied to clipboard.');
   };
   
