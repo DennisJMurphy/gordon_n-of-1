@@ -1,3 +1,9 @@
+5-May-2026
+Prepping for apple store and play store
+Switched out react-native-clipboard for expo-clipboard
+using expo-clipboard reduces dependency risks and aligns with future expo SDK upgrades
+Checked: defaulting to iOS 16, iOS 18 is currently the minimum
+
 21-Apr-2026
 Changed hardcoded versions to reflect package and schema versions
 

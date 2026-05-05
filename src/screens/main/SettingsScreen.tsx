@@ -123,10 +123,7 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
 
   const handleExportData = async () => {
     try {
-      const success = await shareExportedData();
-      if (success) {
-        Alert.alert('Export Complete', 'Your data has been exported successfully.');
-      }
+      await shareExportedData();
     } catch (error) {
       Alert.alert('Export Failed', 'Failed to export data. Please try again.');
     }

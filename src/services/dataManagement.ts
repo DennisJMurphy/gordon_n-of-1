@@ -1,6 +1,7 @@
 // src/services/dataManagement.ts
 import { db } from '../db';
-import { Share } from 'react-native';
+import { shareAsync } from 'expo-sharing';
+import { File, Paths } from 'expo-file-system';
 import { getISOTimestamp } from '../utils/dates';
 
 interface ExportData {
@@ -57,16 +58,19 @@ export async function exportAllData(): Promise<string> {
 /**
  * Share exported data via share sheet
  */
-export async function shareExportedData(): Promise<boolean> {
+export async function shareExportedData(): Promise<void> {
   try {
     const data = await exportAllData();
+    const filename = `gordon-data-${getISOTimestamp().slice(0, 10)}.json`;
+    const file = new File(Paths.cache, filename);
+    if (file.exists) file.delete();
+    file.create();
+    file.write(data);
 
-    const result = await Share.share({
-      message: data,
-      title: 'Gordon Data Backup',
+    await shareAsync(file.uri, {
+      mimeType: 'application/json',
+      dialogTitle: filename,
     });
-
-    return result.action === Share.sharedAction;
   } catch (error) {
     console.error('Failed to share data:', error);
     throw new Error('Failed to share data');
