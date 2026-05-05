@@ -58,7 +58,7 @@ export async function exportAllData(): Promise<string> {
 /**
  * Share exported data via share sheet
  */
-export async function shareExportedData(): Promise<boolean> {
+export async function shareExportedData(): Promise<void> {
   try {
     const data = await exportAllData();
     const filename = `gordon-data-${getISOTimestamp().slice(0, 10)}.json`;
@@ -71,8 +71,6 @@ export async function shareExportedData(): Promise<boolean> {
       mimeType: 'application/json',
       dialogTitle: filename,
     });
-
-    return true;
   } catch (error) {
     console.error('Failed to share data:', error);
     throw new Error('Failed to share data');
