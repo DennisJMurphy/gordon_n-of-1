@@ -1,3 +1,6 @@
+18-May-2026
+added a privacy policy and a docs/ folder
+
 5-May-2026
 Prepping for apple store and play store
 Switched out react-native-clipboard for expo-clipboard
