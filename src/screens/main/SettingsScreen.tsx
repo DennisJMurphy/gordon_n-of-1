@@ -10,6 +10,7 @@ import {
   Alert,
   ScrollView,
   Modal,
+  Linking,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '../../components/ui';
@@ -296,6 +297,13 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
         >
           <Text style={styles.rowLabel}>About Gordon</Text>
           <Text style={styles.rowValue}>Info →</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => Linking.openURL('https://DennisJMurphy.github.io/gordon_n-of-1/privacy.html')}
+        >
+          <Text style={styles.rowLabel}>Privacy Policy</Text>
+          <Text style={styles.rowValue}>↗</Text>
         </TouchableOpacity>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>App version</Text>
