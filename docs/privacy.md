@@ -6,4 +6,4 @@ Data is stored locally on the device by default. Gordon does not require an acco
 
 Users control what information is included in exported reports.
 
-For questions, concerns, or feature requests, email: **[rifficamel+gordon@gmail.com]**
+For questions, concerns, or feature requests, email: [rifficamel+gordon@gmail.com](mailto:rifficamel+gordon@gmail.com)
