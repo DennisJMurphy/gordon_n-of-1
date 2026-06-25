@@ -1,3 +1,8 @@
+25-Jun-2026
+added expo-doctor globally, fixed some vulnerabilities
+adjusted some dependencies
+app is now in apple store connect, awaiting approval for testing
+
 18-May-2026
 added a privacy policy and a docs/ folder
 
