@@ -1,3 +1,9 @@
+9-Sep-2026
+Updated AGENTS.md and CLAUDE.md to allow use of multiple agents.
+CLAUDE.md points to AGENTS.md
+Registered in google play console for testing, not yet live in playstore
+Approved for testing on both platforms, not yet launched publicly
+
 25-Jun-2026
 added expo-doctor globally, fixed some vulnerabilities
 adjusted some dependencies
