@@ -1,3 +1,6 @@
+5-Oct-2026
+updated dependencies and resolved Expo Doctor issues
+
 9-Sep-2026
 Updated AGENTS.md and CLAUDE.md to allow use of multiple agents.
 CLAUDE.md points to AGENTS.md
