@@ -31,7 +31,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   web: {
     favicon: './assets/favicon.png',
   },
-  plugins: ['expo-sqlite',
+  plugins: ['expo-sharing',
+    'expo-status-bar',
+    'expo-sqlite',
     '@react-native-community/datetimepicker',
     ['expo-notifications', {
       icon: './assets/icon.png',

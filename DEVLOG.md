@@ -1,3 +1,7 @@
+6-Oct-2026
+upgraded expo to SDK 57
+confirmed profile preview works on ios
+
 5-Oct-2026
 updated dependencies and resolved Expo Doctor issues
 
