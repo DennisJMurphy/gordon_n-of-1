@@ -53,7 +53,7 @@ The scratchy-throat → flu → recovery journey tests the new product's core id
 
 ## Copilot handoff
 
-1. Read `full_spec-v02.md`, this iteration, `10-revision.md`, `data_design.md`, and inspect the real codebase.
+1. Read `full_spec.md`, this iteration, `10-revision.md`, `data_design.md`, and inspect the real codebase.
 2. Present a brief impact map and proposed schema/navigation changes **before implementing**; flag any contradictions.
 3. Implement the concern journey and clean episode removal, with tests. No legacy-data preservation.
 4. Run available tests, typecheck/lint and Expo Doctor where configured. Report commands, results, remaining gaps and any reset steps.
