@@ -49,7 +49,7 @@ Example bracketed fields:
 #### Routine schema: duration + regularity
 For any routine item (supplement/habit), capture:
 - **StartDate** should support approximate dates, such as month or year
-- **Duration:** `days | weeks | months | years`
+- **Duration:** `days | weeks | months | years`; derive it from known dates where possible, and allow an estimate when dates are approximate or unknown
 - **Regularity:** `rarely | some_days | most_days | daily`
 - Optional source: `supplement | food | mixed`
 - Optional notes (short)
@@ -67,6 +67,8 @@ Not all concerns have an end date. Some are recurring or ongoing. Users can reco
 
 ### 5.3 Interventions and routines
 An intervention is something started, stopped or changed, such as a supplement, medication, exercise practice or other behavior. A routine can be ongoing. Capture relevant details (e.g., dose, unit, frequency, source, notes) only when useful and available. Changes should be timestamped; do not require daily adherence entries.
+
+An ongoing intervention or activity can be recorded once with a start date and relevant details. Treat it as continuing until the user records a change or end date. Do not require periodic reconfirmation or daily adherence logging; the user only needs to update it when something changes.
 
 **No mandatory expected outcome or hypothesis.** The user may record what they are doing without stating what it is meant to affect. No substance receives privileged product treatment.
 
@@ -193,7 +195,7 @@ Before modifying the database, inspect the existing schema and migration history
 - Save
 
 ### 7.6 Report Preview
-- “Generate Report” action (manual or auto end-of-quarter)
+- “Generate Report” action (manual; optional opt-in automatic end-of-quarter generation)
 - Preview:
   - what’s included/excluded
   - privacy scan checklist
@@ -247,6 +249,8 @@ Before modifying the database, inspect the existing schema and migration history
 - No analytics SDKs
 - No network calls required for core function
 - Sharing is explicit and previewed
+
+**Local storage is not a guarantee of confidentiality.** Gordon stores data on this device and does not upload it as part of normal use. The app does not currently encrypt its database or require an app lock. Data may be accessible to someone with access to the device, through malicious software, or through device backups depending on the user's settings. Exported or shared copies are outside Gordon's control. Users should avoid entering information they would not want stored on this device.
 
 ### De-identification strategy
 - Use brackets/categories for baseline context
