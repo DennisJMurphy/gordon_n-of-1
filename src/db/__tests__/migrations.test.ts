@@ -133,16 +133,17 @@ describe('runMigrations', () => {
         `INSERT INTO baseline_context (id, created_at, updated_at, health_notes)
          VALUES ('baseline-1', 'created', 'updated', 'preserve me')`
       ).run();
-      await runMigrations(asSQLiteDb(db));
-
-      const baseline = raw.prepare('SELECT health_notes FROM baseline_context WHERE id = ?')
-        .get('baseline-1') as { health_notes: string };
-      expect(baseline.health_notes).toBe('preserve me');
-      expect(raw.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='episodes'").all()).toHaveLength(0);
-      expect(raw.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='concerns'").all()).toHaveLength(1);
     } finally {
       migrations.push(...laterMigrations);
     }
+
+    await runMigrations(asSQLiteDb(db));
+
+    const baseline = raw.prepare('SELECT health_notes FROM baseline_context WHERE id = ?')
+      .get('baseline-1') as { health_notes: string };
+    expect(baseline.health_notes).toBe('preserve me');
+    expect(raw.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='episodes'").all()).toHaveLength(0);
+    expect(raw.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='concerns'").all()).toHaveLength(1);
   });
 
   it('persists concerns and backdated updates in SQLite', async () => {

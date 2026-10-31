@@ -142,11 +142,12 @@ describe('createCheckin', () => {
     expect(result.id).toBe('test-uuid-1');
 
     const params = __mockDb.runAsync.mock.calls[0][1];
-    expect(params[3]).toBe('2026-01-06');              // week_start_date
-    expect(params[4]).toBe('{"nmn":"every_day"}');  // adherence_json
-    expect(params[5]).toBe('{"diet":true}');         // changes_json
-    expect(params[6]).toBe('["headache"]');           // events_json
-    expect(params[7]).toBe('sure');                   // confidence
+    expect(params[1]).toBe('concern-1');               // concern_id
+    expect(params[2]).toBe('2026-01-06');              // week_start_date
+    expect(params[3]).toBe('{"nmn":"every_day"}');  // adherence_json
+    expect(params[4]).toBe('{"diet":true}');         // changes_json
+    expect(params[5]).toBe('["headache"]');           // events_json
+    expect(params[6]).toBe('sure');                   // confidence
   });
 
   it('handles empty/missing optional fields', async () => {
@@ -166,11 +167,12 @@ describe('createCheckin', () => {
     });
 
     const params = __mockDb.runAsync.mock.calls[0][1];
-    expect(params[3]).toBe('2026-01-06'); // week_start_date
-    expect(params[4]).toBe('{}');         // adherence_json
-    expect(params[5]).toBe('{}');         // changes_json
-    expect(params[6]).toBe('[]');         // events_json
-    expect(params[7]).toBeNull();         // confidence
+    expect(params[1]).toBeNull();         // concern_id
+    expect(params[2]).toBe('2026-01-06'); // week_start_date
+    expect(params[3]).toBe('{}');         // adherence_json
+    expect(params[4]).toBe('{}');         // changes_json
+    expect(params[5]).toBe('[]');         // events_json
+    expect(params[6]).toBeNull();         // confidence
   });
 });
 
