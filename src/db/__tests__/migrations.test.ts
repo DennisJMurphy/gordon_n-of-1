@@ -20,7 +20,7 @@ describe('runMigrations', () => {
     cleanup = [];
   });
 
-  it('creates all tables on a fresh database', async () => {
+  it('creates continuous-history tables on a fresh database', async () => {
     const { db, raw } = makeTestDb();
     await runMigrations(asSQLiteDb(db));
 
@@ -32,11 +32,14 @@ describe('runMigrations', () => {
 
     expect(names).toContain('meta');
     expect(names).toContain('baseline_context');
-    expect(names).toContain('episodes');
+    expect(names).toContain('concerns');
+    expect(names).toContain('concern_updates');
     expect(names).toContain('interventions');
+    expect(names).toContain('intervention_events');
     expect(names).toContain('weekly_checkins');
     expect(names).toContain('day_notes');
-    expect(names).toContain('reports');
+    expect(names).not.toContain('episodes');
+    expect(names).not.toContain('reports');
   });
 
   it('sets meta version to the latest migration id', async () => {
@@ -75,11 +78,12 @@ describe('runMigrations', () => {
     // Each table should accept a SELECT without error
     const tables = [
       'baseline_context',
-      'episodes',
+      'concerns',
+      'concern_updates',
       'interventions',
+      'intervention_events',
       'weekly_checkins',
       'day_notes',
-      'reports',
     ];
     for (const table of tables) {
       expect(() => raw.prepare(`SELECT * FROM ${table}`).all()).not.toThrow();
@@ -95,28 +99,85 @@ describe('runMigrations', () => {
       .all() as { name: string }[];
     const names = indexes.map((i) => i.name);
 
-    expect(names).toContain('idx_interventions_episode');
-    expect(names).toContain('idx_weekly_checkins_episode');
-    expect(names).toContain('idx_day_notes_episode_date');
-    expect(names).toContain('idx_reports_episode');
+    expect(names).toContain('idx_concern_updates_concern_date');
+    expect(names).toContain('idx_intervention_events_intervention_date');
+    expect(names).toContain('idx_weekly_checkins_week');
+    expect(names).toContain('idx_day_notes_date');
   });
 
-  it('key columns exist with correct types (spot check)', async () => {
+  it('concern columns support status and approximate dates', async () => {
     const { db, raw } = makeTestDb();
     await runMigrations(asSQLiteDb(db));
 
-    const episodeCols = raw.prepare('PRAGMA table_info(episodes)').all() as {
+    const concernCols = raw.prepare('PRAGMA table_info(concerns)').all() as {
       name: string;
       type: string;
       notnull: number;
     }[];
-    const colMap = Object.fromEntries(episodeCols.map((c) => [c.name, c]));
+    const colMap = Object.fromEntries(concernCols.map((c) => [c.name, c]));
 
     expect(colMap['id'].type).toBe('TEXT');
     expect(colMap['id'].notnull).toBe(1);
     expect(colMap['title'].type).toBe('TEXT');
-    expect(colMap['start_date'].type).toBe('TEXT');
+    expect(colMap['onset_date'].type).toBe('TEXT');
     expect(colMap['status'].type).toBe('TEXT');
+  });
+
+  it('upgrades the existing database without deleting baseline context', async () => {
+    const { db, raw } = makeTestDb();
+    const laterMigrations = migrations.splice(2);
+
+    try {
+      await runMigrations(asSQLiteDb(db));
+      raw.prepare(
+        `INSERT INTO baseline_context (id, created_at, updated_at, health_notes)
+         VALUES ('baseline-1', 'created', 'updated', 'preserve me')`
+      ).run();
+      await runMigrations(asSQLiteDb(db));
+
+      const baseline = raw.prepare('SELECT health_notes FROM baseline_context WHERE id = ?')
+        .get('baseline-1') as { health_notes: string };
+      expect(baseline.health_notes).toBe('preserve me');
+      expect(raw.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='episodes'").all()).toHaveLength(0);
+      expect(raw.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='concerns'").all()).toHaveLength(1);
+    } finally {
+      migrations.push(...laterMigrations);
+    }
+  });
+
+  it('persists concerns and backdated updates in SQLite', async () => {
+    const { db, raw } = makeTestDb();
+    await runMigrations(asSQLiteDb(db));
+
+    raw.prepare(
+      `INSERT INTO concerns (id, title, onset_date, initial_note, status, created_at, updated_at)
+       VALUES ('concern-1', 'Scratchy throat', '2026-10', 'Cause unknown', 'open', 'created', 'updated')`
+    ).run();
+    raw.prepare(
+      `INSERT INTO concern_updates (
+        id, concern_id, event_date, event_type, label, certainty, note, recorded_at
+      ) VALUES ('update-1', 'concern-1', '2026-10-03', 'interpretation', 'Flu', 'suspected', NULL, '2026-10-31T12:00:00Z')`
+    ).run();
+
+    await runMigrations(asSQLiteDb(db));
+
+    const concern = raw.prepare('SELECT * FROM concerns WHERE id = ?').get('concern-1') as {
+      onset_date: string;
+      initial_note: string;
+    };
+    const update = raw.prepare('SELECT * FROM concern_updates WHERE id = ?').get('update-1') as {
+      event_date: string;
+      label: string;
+      certainty: string;
+      recorded_at: string;
+    };
+    expect(concern).toMatchObject({ onset_date: '2026-10', initial_note: 'Cause unknown' });
+    expect(update).toMatchObject({
+      event_date: '2026-10-03',
+      label: 'Flu',
+      certainty: 'suspected',
+      recorded_at: '2026-10-31T12:00:00Z',
+    });
   });
 
   it('JSON columns accept text values', async () => {

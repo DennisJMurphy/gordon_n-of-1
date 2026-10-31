@@ -3,11 +3,10 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeStackParamList } from './types';
 import { HomeScreen } from '../screens/main/HomeScreen';
+import { NewConcernScreen } from '../screens/main/NewConcernScreen';
+import { ConcernDetailScreen } from '../screens/main/ConcernDetailScreen';
 import { WeeklyCheckinScreen } from '../screens/main/WeeklyCheckinScreen';
 import { CheckinHistoryScreen } from '../screens/main/CheckinHistoryScreen';
-import { PrivacyPreviewScreen } from '../screens/main/PrivacyPreviewScreen';
-import { ReportSuccessScreen } from '../screens/main/ReportSuccessScreen';
-import { NewEpisodeScreen } from '../screens/main/NewEpisodeScreen';
 import { InterventionSetupScreen } from '../screens/main/InterventionSetupScreen';
 import { EditBaselineScreen } from '../screens/main/EditBaselineScreen';
 import { colors, fontSize } from '../theme';
@@ -39,9 +38,14 @@ export function HomeStackNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="NewEpisode"
-        component={NewEpisodeScreen}
-        options={{ title: 'New Episode' }}
+        name="NewConcern"
+        component={NewConcernScreen}
+        options={{ title: 'New Concern' }}
+      />
+      <Stack.Screen
+        name="ConcernDetail"
+        component={ConcernDetailScreen}
+        options={{ title: 'Concern History' }}
       />
       <Stack.Screen
         name="InterventionSetup"
@@ -57,19 +61,6 @@ export function HomeStackNavigator() {
         name="CheckinHistory"
         component={CheckinHistoryScreen}
         options={{ title: 'Check-in History' }}
-      />
-      <Stack.Screen
-        name="PrivacyPreview"
-        component={PrivacyPreviewScreen}
-        options={{ title: 'Privacy Preview' }}
-      />
-      <Stack.Screen
-        name="ReportSuccess"
-        component={ReportSuccessScreen}
-        options={{ 
-          title: 'Report Generated',
-          headerBackVisible: false, // Can't go back after generating
-        }}
       />
       <Stack.Screen
         name="EditBaseline"

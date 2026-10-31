@@ -7,7 +7,6 @@ import { CompositeScreenProps, NavigatorScreenParams } from '@react-navigation/n
 export type OnboardingStackParamList = {
   Intro: undefined;
   BaselineContext: undefined;
-  EpisodeSetup: undefined;
   InterventionSetup: undefined;
   ReminderSetup: undefined;
 };
@@ -15,23 +14,13 @@ export type OnboardingStackParamList = {
 // Home stack (nested in Home tab)
 export type HomeStackParamList = {
   HomeMain: undefined;
-  NewEpisode: undefined;
-  InterventionSetup: {
-    episodeId: string;
-  };
+  NewConcern: undefined;
+  ConcernDetail: { concernId: string };
+  InterventionSetup: undefined;
   WeeklyCheckin: {
-    episodeId: string;
     checkinId?: string; // If provided, we're editing
   };
-  CheckinHistory: {
-    episodeId: string;
-  };
-  PrivacyPreview: {
-    episodeId: string;
-  };
-  ReportSuccess: {
-    reportId: string;
-  };
+  CheckinHistory: undefined;
   EditBaseline: undefined;
 };
 

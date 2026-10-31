@@ -36,7 +36,7 @@ The scratchy-throat → flu → recovery journey tests the new product's core id
 - A user can add a later or backdated update without rewriting the original observation.
 - A user can revise an interpretation (e.g., scratchy throat to suspected flu) while preserving earlier context.
 - A user can mark resolution and see an elapsed duration when enough date information exists; otherwise Gordon does not fabricate a duration.
-- Data persists across app restarts, including after a fresh install and a documented reset of the development database.
+- An ordinary app update does not erase the SQLite database: the migration retains baseline context, removes legacy episode-scoped records without migrating them, and creates the standalone schema. New concern history persists across app restarts. A fresh install starts with an empty database; document any development-only reset steps.
 - No check-in, reminder, hypothesis or intervention is required to complete the journey.
 - No episode model remains in active runtime code or the current database schema (including tables, foreign keys, home cards, onboarding prompts and navigation routes). Historical documentation and migration history are excluded. Old report paths must be updated or explicitly unavailable.
 - Relevant automated tests are added/updated; the full existing test suite passes, and the revised flow works on a physical device or simulator.

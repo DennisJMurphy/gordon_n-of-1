@@ -136,10 +136,6 @@ export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'I
   };
 
   const handleNext = () => {
-    // If form has data and nothing saved yet, save it first
-    if (state.interventions.length === 0 && compound) {
-      if (!handleAddCurrent()) return;
-    }
     navigation.navigate('ReminderSetup');
   };
 
@@ -150,9 +146,9 @@ export function InterventionSetupScreen({ navigation }: OnboardingScreenProps<'I
   return (
     <ScreenContainer scrollable safeBottom>
       <View style={styles.header}>
-        <Text style={styles.title}>Define Your Intervention</Text>
+        <Text style={styles.title}>Ongoing Interventions</Text>
         <Text style={styles.subtitle}>
-          What are you trying? You can add multiple interventions.
+          Add activities or supplements you already use. This step is optional; you can add or change items later.
         </Text>
       </View>
 

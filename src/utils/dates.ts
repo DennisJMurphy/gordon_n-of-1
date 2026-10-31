@@ -1,8 +1,6 @@
 // src/utils/dates.ts
 // Date utilities for Gordon
 
-import { Episode } from '../types';
-
 /**
  * Get the current calendar quarter end date
  * Q1: Jan-Mar, Q2: Apr-Jun, Q3: Jul-Sep, Q4: Oct-Dec
@@ -84,27 +82,48 @@ export function getQuarterStartDate(date: Date = new Date()): Date {
   return new Date(year, 9, 1);
 }
 
-/**
- * Generate a default episode title based on the quarter of the start date.
- * If other episodes exist in the same quarter, appends "eN" suffix.
- * e.g. "Q1 2026", "Q1 2026 e2", "Q1 2026 e3"
- */
-export function getDefaultEpisodeTitle(startDate: Date, existingEpisodes: Episode[]): string {
-  const quarterLabel = getQuarterLabel(startDate);
-  const qStart = getQuarterStartDate(startDate);
-  const qEnd = getQuarterEndDate(startDate);
-  const qStartStr = formatDateISO(qStart);
-  const qEndStr = formatDateISO(qEnd);
+export function isValidApproximateDate(value: string): boolean {
+  if (!/^\d{4}(?:-\d{2}(?:-\d{2})?)?$/.test(value)) return false;
+  const [yearText, monthText, dayText] = value.split('-');
+  const year = Number(yearText);
+  if (year < 1 || year > 9999) return false;
+  if (!monthText) return true;
 
-  // Count episodes whose start_date falls within the same quarter
-  const sameQuarterCount = existingEpisodes.filter(ep =>
-    ep.start_date >= qStartStr && ep.start_date <= qEndStr
-  ).length;
+  const month = Number(monthText);
+  if (month < 1 || month > 12) return false;
+  if (!dayText) return true;
 
-  if (sameQuarterCount === 0) {
-    return quarterLabel;
+  const day = Number(dayText);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day;
+}
+
+export function formatApproximateDate(value?: string): string {
+  if (!value) return 'Date unknown';
+  if (value.length === 4) return value;
+  if (value.length === 7) {
+    const [year, month] = value.split('-').map(Number);
+    return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    });
   }
-  return `${quarterLabel} e${sameQuarterCount + 1}`;
+  return formatDateDisplay(value);
+}
+
+export function getElapsedCalendarDays(start?: string, end?: string): number | null {
+  if (!start || !end || start.length !== 10 || end.length !== 10 ||
+      !isValidApproximateDate(start) || !isValidApproximateDate(end)) {
+    return null;
+  }
+  const toUtcDay = (value: string) => {
+    const [year, month, day] = value.split('-').map(Number);
+    return Date.UTC(year, month - 1, day);
+  };
+  const elapsed = (toUtcDay(end) - toUtcDay(start)) / 86_400_000;
+  return elapsed >= 0 ? elapsed : null;
 }
 
 /**

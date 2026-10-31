@@ -31,7 +31,7 @@ import {
 } from '../../services/dataManagement';
 import { getBaselineContext, saveBaselineContext } from '../../db/repositories/baselineContext';
 import { BaselineContext } from '../../types';
-import { SCHEMA_VERSION } from '../../services/reportBuilder';
+import { migrations } from '../../db/migrations';
 import { version as APP_VERSION } from '../../../package.json';
 
 const DAYS = [
@@ -57,7 +57,7 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
     minute: 0,
   });
   const [baseline, setBaseline] = useState<BaselineContext | null>(null);
-  const [dataStats, setDataStats] = useState({ episodes: 0, checkins: 0, dayNotes: 0, reports: 0 });
+  const [dataStats, setDataStats] = useState({ concerns: 0, interventions: 0, checkins: 0, dayNotes: 0 });
   const [loading, setLoading] = useState(true);
   const [showDayPicker, setShowDayPicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -134,10 +134,11 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
     Alert.alert(
       '⚠️ Wipe All Data',
       `This will permanently delete:\n\n` +
-        `• ${dataStats.episodes} episode(s)\n` +
+        `• ${dataStats.concerns} concern(s)\n` +
+        `• ${dataStats.interventions} intervention(s)\n` +
         `• ${dataStats.checkins} check-in(s)\n` +
         `• ${dataStats.dayNotes} day note(s)\n` +
-        `• ${dataStats.reports} report(s)\n\n` +
+        `• baseline context\n\n` +
         `This action CANNOT be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -243,7 +244,7 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
           <Text style={styles.rowValue}>Edit →</Text>
         </TouchableOpacity>
         <Text style={styles.hint}>
-          Choose which baseline fields to include by default when generating reports.
+          Choose which baseline fields may be included in a future report by default.
         </Text>
       </View>
 
@@ -265,8 +266,8 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
         
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{dataStats.episodes}</Text>
-            <Text style={styles.statLabel}>episodes</Text>
+            <Text style={styles.statValue}>{dataStats.concerns}</Text>
+            <Text style={styles.statLabel}>concerns</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{dataStats.checkins}</Text>
@@ -277,8 +278,8 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
             <Text style={styles.statLabel}>notes</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{dataStats.reports}</Text>
-            <Text style={styles.statLabel}>reports</Text>
+            <Text style={styles.statValue}>{dataStats.interventions}</Text>
+            <Text style={styles.statLabel}>interventions</Text>
           </View>
         </View>
         
@@ -310,8 +311,8 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
           <Text style={styles.rowValue}>{APP_VERSION}</Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.rowLabel}>Schema version</Text>
-          <Text style={styles.rowValue}>{SCHEMA_VERSION}</Text>
+          <Text style={styles.rowLabel}>Database version</Text>
+          <Text style={styles.rowValue}>{migrations[migrations.length - 1]?.id ?? 0}</Text>
         </View>
         <TouchableOpacity 
           style={[styles.row, styles.dangerRow]} 
@@ -327,7 +328,7 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
           source={require('../../../assets/icon.png')}
           style={styles.footerIcon}
         />
-        <Text style={styles.footerText}>Gordon — an n-of-1 report tool</Text>
+        <Text style={styles.footerText}>Gordon — personal tracking and reports</Text>
         <Text style={styles.footerSubtext}>
           Privacy-first. Nothing leaves without consent.
         </Text>
@@ -469,10 +470,10 @@ export function SettingsScreen({ navigation }: MainTabScreenProps<'Settings'>) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>About Gordon</Text>
             <Text style={styles.aboutText}>
-              Gordon is a privacy-first tool for turning personal habits and self-experiments into structured, anonymized reports.
+              Gordon is a privacy-first tool for recording concerns, activities and observations over time.
             </Text>
             <Text style={styles.aboutText}>
-              Instead of tracking everything all the time, Gordon summarizes meaningful periods of your life — "episodes" — and produces simple reports you can choose to share. The goal is to help you to contribute useful data to health and longevity research while keeping your personal information under control.
+              Record only what matters to you. Check-ins are optional, and reports are unavailable while the reporting model is redesigned for continuous history.
             </Text>
             <TouchableOpacity
               style={styles.modalClose}

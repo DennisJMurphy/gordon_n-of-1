@@ -19,14 +19,15 @@ afterEach(() => jest.useRealTimers());
 // ── exportAllData ───────────────────────────────────────
 
 describe('exportAllData', () => {
-  it('queries all 6 tables and returns structured JSON', async () => {
+  it('queries current data tables and returns structured JSON', async () => {
     __mockDb.getAllAsync
       .mockResolvedValueOnce([{ id: 'bl-1' }])    // baseline_context
-      .mockResolvedValueOnce([{ id: 'ep-1' }])    // episodes
+      .mockResolvedValueOnce([{ id: 'cn-1' }])    // concerns
+      .mockResolvedValueOnce([{ id: 'cu-1' }])    // concern_updates
       .mockResolvedValueOnce([{ id: 'int-1' }])   // interventions
+      .mockResolvedValueOnce([{ id: 'ie-1' }])    // intervention_events
       .mockResolvedValueOnce([{ id: 'chk-1' }])   // weekly_checkins
-      .mockResolvedValueOnce([{ id: 'dn-1' }])    // day_notes
-      .mockResolvedValueOnce([{ id: 'rpt-1' }]);  // reports
+      .mockResolvedValueOnce([{ id: 'dn-1' }]);   // day_notes
 
     const result = await exportAllData();
     const parsed = JSON.parse(result);
@@ -34,13 +35,14 @@ describe('exportAllData', () => {
     expect(parsed.export_version).toBe('1.0.0');
     expect(parsed.exported_at).toBe('2026-03-15T12:00:00.000Z');
     expect(parsed.baseline_context).toEqual([{ id: 'bl-1' }]);
-    expect(parsed.episodes).toEqual([{ id: 'ep-1' }]);
+    expect(parsed.concerns).toEqual([{ id: 'cn-1' }]);
+    expect(parsed.concern_updates).toEqual([{ id: 'cu-1' }]);
     expect(parsed.interventions).toEqual([{ id: 'int-1' }]);
+    expect(parsed.intervention_events).toEqual([{ id: 'ie-1' }]);
     expect(parsed.weekly_checkins).toEqual([{ id: 'chk-1' }]);
     expect(parsed.day_notes).toEqual([{ id: 'dn-1' }]);
-    expect(parsed.reports).toEqual([{ id: 'rpt-1' }]);
 
-    expect(__mockDb.getAllAsync).toHaveBeenCalledTimes(6);
+    expect(__mockDb.getAllAsync).toHaveBeenCalledTimes(7);
   });
 
   it('handles empty tables', async () => {
@@ -49,7 +51,7 @@ describe('exportAllData', () => {
     const result = await exportAllData();
     const parsed = JSON.parse(result);
 
-    expect(parsed.episodes).toEqual([]);
+    expect(parsed.concerns).toEqual([]);
     expect(parsed.weekly_checkins).toEqual([]);
   });
 
@@ -69,11 +71,12 @@ describe('wipeAllData', () => {
 
     expect(__mockDb.execAsync).toHaveBeenCalledTimes(1);
     const sql = __mockDb.execAsync.mock.calls[0][0];
-    expect(sql).toContain('DELETE FROM reports');
+    expect(sql).toContain('DELETE FROM intervention_events');
+    expect(sql).toContain('DELETE FROM concern_updates');
+    expect(sql).toContain('DELETE FROM concerns');
     expect(sql).toContain('DELETE FROM day_notes');
     expect(sql).toContain('DELETE FROM weekly_checkins');
     expect(sql).toContain('DELETE FROM interventions');
-    expect(sql).toContain('DELETE FROM episodes');
     expect(sql).toContain('DELETE FROM baseline_context');
   });
 
@@ -88,18 +91,18 @@ describe('wipeAllData', () => {
 describe('getDataStats', () => {
   it('returns counts from all tables', async () => {
     __mockDb.getFirstAsync
-      .mockResolvedValueOnce({ count: 3 })   // episodes
+      .mockResolvedValueOnce({ count: 3 })   // concerns
+      .mockResolvedValueOnce({ count: 4 })   // interventions
       .mockResolvedValueOnce({ count: 12 })  // weekly_checkins
-      .mockResolvedValueOnce({ count: 5 })   // day_notes
-      .mockResolvedValueOnce({ count: 2 });  // reports
+      .mockResolvedValueOnce({ count: 5 });  // day_notes
 
     const stats = await getDataStats();
 
     expect(stats).toEqual({
-      episodes: 3,
+      concerns: 3,
+      interventions: 4,
       checkins: 12,
       dayNotes: 5,
-      reports: 2,
     });
     expect(__mockDb.getFirstAsync).toHaveBeenCalledTimes(4);
   });
@@ -110,10 +113,10 @@ describe('getDataStats', () => {
     const stats = await getDataStats();
 
     expect(stats).toEqual({
-      episodes: 0,
+      concerns: 0,
+      interventions: 0,
       checkins: 0,
       dayNotes: 0,
-      reports: 0,
     });
   });
 
@@ -123,10 +126,10 @@ describe('getDataStats', () => {
     const stats = await getDataStats();
 
     expect(stats).toEqual({
-      episodes: 0,
+      concerns: 0,
+      interventions: 0,
       checkins: 0,
       dayNotes: 0,
-      reports: 0,
     });
   });
 });

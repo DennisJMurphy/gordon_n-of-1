@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ScreenContainer, Button } from '../../components/ui';
+import { ScreenContainer, Button, Select } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { HomeStackParamList } from '../../navigation/types';
 import {
@@ -18,6 +18,7 @@ import {
   AdherenceBin,
   Confidence,
   Intervention,
+  Concern,
 } from '../../types';
 import {
   createCheckin,
@@ -25,7 +26,8 @@ import {
   getCheckinById,
   getCurrentWeekStart,
 } from '../../db/repositories/weeklyCheckins';
-import { getInterventionsByEpisode } from '../../db/repositories/interventions';
+import { getAllInterventions } from '../../db/repositories/interventions';
+import { getAllConcerns } from '../../db/repositories/concerns';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'WeeklyCheckin'>;
 
@@ -54,10 +56,12 @@ const CONFIDENCE_OPTIONS: { value: Confidence; label: string; emoji: string }[] 
 ];
 
 export function WeeklyCheckinScreen({ navigation, route }: Props) {
-  const { episodeId, checkinId } = route.params;
+  const { checkinId } = route.params;
   const isEdit = !!checkinId;
 
   const [interventions, setInterventions] = useState<Intervention[]>([]);
+  const [concerns, setConcerns] = useState<Concern[]>([]);
+  const [concernId, setConcernId] = useState('');
   const [adherence, setAdherence] = useState<Record<string, AdherenceBin>>({});
   const [changes, setChanges] = useState<Record<string, boolean>>({});
   const [events, setEvents] = useState<string[]>([]);
@@ -73,9 +77,13 @@ export function WeeklyCheckinScreen({ navigation, route }: Props) {
 
   const loadData = async () => {
     try {
-      // Load interventions for this episode
-      const episodeInterventions = await getInterventionsByEpisode(episodeId);
-      setInterventions(episodeInterventions);
+      const [allInterventions, allConcerns] = await Promise.all([
+        getAllInterventions(),
+        getAllConcerns(),
+      ]);
+      const activeInterventions = allInterventions.filter((item) => !item.end_date);
+      setInterventions(activeInterventions);
+      setConcerns(allConcerns);
 
       // If editing, load existing check-in
       if (checkinId) {
@@ -86,11 +94,12 @@ export function WeeklyCheckinScreen({ navigation, route }: Props) {
           setEvents(existing.events);
           setConfidence(existing.confidence);
           setWeekStartDate(existing.week_start_date);
+          setConcernId(existing.concern_id ?? '');
         }
       } else {
         // Initialize adherence for all interventions
         const initialAdherence: Record<string, AdherenceBin> = {};
-        episodeInterventions.forEach((i) => {
+        activeInterventions.forEach((i) => {
           initialAdherence[i.compound] = 'every_day';
         });
         setAdherence(initialAdherence);
@@ -131,10 +140,11 @@ export function WeeklyCheckinScreen({ navigation, route }: Props) {
           changes,
           events,
           confidence,
+          concern_id: concernId || undefined,
         });
       } else {
         await createCheckin({
-          episode_id: episodeId,
+          concern_id: concernId || undefined,
           week_start_date: weekStartDate,
           adherence,
           changes,
@@ -169,6 +179,20 @@ export function WeeklyCheckinScreen({ navigation, route }: Props) {
           <Text style={styles.weekLabel}>Week of</Text>
           <Text style={styles.weekDate}>{formatWeekDate(weekStartDate)}</Text>
         </View>
+
+        {concerns.length > 0 && (
+          <View style={styles.section}>
+            <Select
+              label="Related concern (optional)"
+              options={[
+                { label: 'No linked concern', value: '' },
+                ...concerns.map((concern) => ({ label: concern.title, value: concern.id })),
+              ]}
+              value={concernId}
+              onChange={setConcernId}
+            />
+          </View>
+        )}
 
         {/* Adherence Section */}
         {interventions.length > 0 && (

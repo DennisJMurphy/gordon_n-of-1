@@ -8,11 +8,12 @@ interface ExportData {
   export_version: string;
   exported_at: string;
   baseline_context: any[];
-  episodes: any[];
+  concerns: any[];
+  concern_updates: any[];
   interventions: any[];
+  intervention_events: any[];
   weekly_checkins: any[];
   day_notes: any[];
-  reports: any[];
 }
 
 /**
@@ -23,29 +24,32 @@ export async function exportAllData(): Promise<string> {
     // Query all tables
     const [
       baseline,
-      episodes,
+      concerns,
+      concernUpdates,
       interventions,
+      interventionEvents,
       checkins,
       dayNotes,
-      reports,
     ] = await Promise.all([
       db.getAllAsync('SELECT * FROM baseline_context'),
-      db.getAllAsync('SELECT * FROM episodes ORDER BY created_at DESC'),
+      db.getAllAsync('SELECT * FROM concerns ORDER BY updated_at DESC'),
+      db.getAllAsync('SELECT * FROM concern_updates ORDER BY event_date, recorded_at'),
       db.getAllAsync('SELECT * FROM interventions ORDER BY created_at DESC'),
+      db.getAllAsync('SELECT * FROM intervention_events ORDER BY event_date, recorded_at'),
       db.getAllAsync('SELECT * FROM weekly_checkins ORDER BY week_start_date DESC'),
       db.getAllAsync('SELECT * FROM day_notes ORDER BY date DESC'),
-      db.getAllAsync('SELECT * FROM reports ORDER BY generated_at DESC'),
     ]);
 
     const exportData: ExportData = {
       export_version: '1.0.0',
       exported_at: getISOTimestamp(),
       baseline_context: baseline,
-      episodes,
+      concerns,
+      concern_updates: concernUpdates,
       interventions,
+      intervention_events: interventionEvents,
       weekly_checkins: checkins,
       day_notes: dayNotes,
-      reports,
     };
 
     return JSON.stringify(exportData, null, 2);
@@ -84,11 +88,12 @@ export async function shareExportedData(): Promise<void> {
 export async function wipeAllData(): Promise<void> {
   try {
     await db.execAsync(`
-      DELETE FROM reports;
+      DELETE FROM intervention_events;
+      DELETE FROM concern_updates;
+      DELETE FROM concerns;
       DELETE FROM day_notes;
       DELETE FROM weekly_checkins;
       DELETE FROM interventions;
-      DELETE FROM episodes;
       DELETE FROM baseline_context;
     `);
   } catch (error) {
@@ -101,27 +106,27 @@ export async function wipeAllData(): Promise<void> {
  * Get data statistics for display
  */
 export async function getDataStats(): Promise<{
-  episodes: number;
+  concerns: number;
+  interventions: number;
   checkins: number;
   dayNotes: number;
-  reports: number;
 }> {
   try {
-    const [episodes, checkins, dayNotes, reports] = await Promise.all([
-      db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM episodes'),
+    const [concerns, interventions, checkins, dayNotes] = await Promise.all([
+      db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM concerns'),
+      db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM interventions'),
       db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM weekly_checkins'),
       db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM day_notes'),
-      db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM reports'),
     ]);
 
     return {
-      episodes: episodes?.count ?? 0,
+      concerns: concerns?.count ?? 0,
+      interventions: interventions?.count ?? 0,
       checkins: checkins?.count ?? 0,
       dayNotes: dayNotes?.count ?? 0,
-      reports: reports?.count ?? 0,
     };
   } catch (error) {
     console.error('Failed to get data stats:', error);
-    return { episodes: 0, checkins: 0, dayNotes: 0, reports: 0 };
+    return { concerns: 0, interventions: 0, checkins: 0, dayNotes: 0 };
   }
 }

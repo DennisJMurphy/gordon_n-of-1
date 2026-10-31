@@ -5,7 +5,6 @@ import { OnboardingStackParamList } from './types';
 import {
   IntroScreen,
   BaselineContextScreen,
-  EpisodeSetupScreen,
   InterventionSetupScreen,
   ReminderSetupScreen,
 } from '../screens/onboarding';
@@ -24,7 +23,6 @@ export function OnboardingNavigator() {
     >
       <Stack.Screen name="Intro" component={IntroScreen} />
       <Stack.Screen name="BaselineContext" component={BaselineContextScreen} />
-      <Stack.Screen name="EpisodeSetup" component={EpisodeSetupScreen} />
       <Stack.Screen name="InterventionSetup" component={InterventionSetupScreen} />
       <Stack.Screen name="ReminderSetup" component={ReminderSetupScreen} />
     </Stack.Navigator>

@@ -23,7 +23,6 @@ import {
 interface DayDetailSheetProps {
   visible: boolean;
   onClose: () => void;
-  episodeId: string;
   date: string; // YYYY-MM-DD
   onNoteChanged: () => void;
 }
@@ -31,7 +30,6 @@ interface DayDetailSheetProps {
 export function DayDetailSheet({
   visible,
   onClose,
-  episodeId,
   date,
   onNoteChanged,
 }: DayDetailSheetProps) {
@@ -49,7 +47,7 @@ export function DayDetailSheet({
   const loadNote = async () => {
     setLoading(true);
     try {
-      const existing = await getNoteByDate(episodeId, date);
+      const existing = await getNoteByDate(date);
       setExistingNote(existing);
       setNote(existing?.note ?? '');
     } catch (error) {
@@ -72,7 +70,7 @@ export function DayDetailSheet({
 
     setSaving(true);
     try {
-      await upsertNote(episodeId, date, note.trim());
+      await upsertNote(date, note.trim());
       onNoteChanged();
       onClose();
     } catch (error) {
@@ -96,7 +94,7 @@ export function DayDetailSheet({
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteNoteByDate(episodeId, date);
+              await deleteNoteByDate(date);
               onNoteChanged();
               onClose();
             } catch (error) {

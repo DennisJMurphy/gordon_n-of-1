@@ -149,7 +149,7 @@ export function RoutineItemEditor({ items, onChange }: RoutineItemEditorProps) {
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Standard Interventions / Habits</Text>
       <Text style={styles.sectionHint}>
-        Supplements or habits you use regularly, independent of any episode.
+        Supplements or habits you use regularly, whether or not they relate to a concern.
       </Text>
 
       {items.length > 0 && (

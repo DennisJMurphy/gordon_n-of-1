@@ -2,7 +2,7 @@ import { __mockDb } from '../../../__mocks__/expo-sqlite';
 import { __resetUUID } from '../../../__mocks__/expo-crypto';
 import {
   getCurrentWeekStart,
-  getCheckinsByEpisode,
+  getAllCheckins,
   getCheckinByWeek,
   createCheckin,
   updateCheckin,
@@ -55,7 +55,7 @@ describe('getCurrentWeekStart', () => {
 
 const sampleRow = {
   id: 'chk-1',
-  episode_id: 'ep-1',
+  concern_id: null,
   week_start_date: '2026-01-06',
   adherence_json: '{"nmn":"every_day"}',
   changes_json: '{"diet":true}',
@@ -74,10 +74,10 @@ beforeEach(() => {
 
 afterEach(() => jest.useRealTimers());
 
-describe('getCheckinsByEpisode', () => {
+describe('getAllCheckins', () => {
   it('returns mapped checkins with parsed JSON fields', async () => {
     __mockDb.getAllAsync.mockResolvedValueOnce([sampleRow]);
-    const result = await getCheckinsByEpisode('ep-1');
+    const result = await getAllCheckins();
     expect(result).toHaveLength(1);
     expect(result[0].adherence).toEqual({ nmn: 'every_day' });
     expect(result[0].changes).toEqual({ diet: true });
@@ -93,7 +93,7 @@ describe('getCheckinsByEpisode', () => {
       events_json: null,
       confidence: null,
     }]);
-    const result = await getCheckinsByEpisode('ep-1');
+    const result = await getAllCheckins();
     expect(result[0].adherence).toEqual({});
     expect(result[0].changes).toEqual({});
     expect(result[0].events).toEqual([]);
@@ -102,7 +102,7 @@ describe('getCheckinsByEpisode', () => {
 
   it('returns empty array when none exist', async () => {
     __mockDb.getAllAsync.mockResolvedValueOnce([]);
-    const result = await getCheckinsByEpisode('ep-1');
+    const result = await getAllCheckins();
     expect(result).toEqual([]);
   });
 });
@@ -110,14 +110,14 @@ describe('getCheckinsByEpisode', () => {
 describe('getCheckinByWeek', () => {
   it('returns checkin when found', async () => {
     __mockDb.getFirstAsync.mockResolvedValueOnce(sampleRow);
-    const result = await getCheckinByWeek('ep-1', '2026-01-06');
+    const result = await getCheckinByWeek('2026-01-06');
     expect(result).not.toBeNull();
     expect(result!.week_start_date).toBe('2026-01-06');
   });
 
   it('returns null when not found', async () => {
     __mockDb.getFirstAsync.mockResolvedValueOnce(null);
-    const result = await getCheckinByWeek('ep-1', '2026-02-01');
+    const result = await getCheckinByWeek('2026-02-01');
     expect(result).toBeNull();
   });
 });
@@ -131,7 +131,7 @@ describe('createCheckin', () => {
     });
 
     const result = await createCheckin({
-      episode_id: 'ep-1',
+      concern_id: 'concern-1',
       week_start_date: '2026-01-06',
       adherence: { nmn: 'every_day' },
       changes: { diet: true },
@@ -142,10 +142,11 @@ describe('createCheckin', () => {
     expect(result.id).toBe('test-uuid-1');
 
     const params = __mockDb.runAsync.mock.calls[0][1];
-    expect(params[3]).toBe('{"nmn":"every_day"}');  // adherence_json
-    expect(params[4]).toBe('{"diet":true}');         // changes_json
-    expect(params[5]).toBe('["headache"]');           // events_json
-    expect(params[6]).toBe('sure');                   // confidence
+    expect(params[3]).toBe('2026-01-06');              // week_start_date
+    expect(params[4]).toBe('{"nmn":"every_day"}');  // adherence_json
+    expect(params[5]).toBe('{"diet":true}');         // changes_json
+    expect(params[6]).toBe('["headache"]');           // events_json
+    expect(params[7]).toBe('sure');                   // confidence
   });
 
   it('handles empty/missing optional fields', async () => {
@@ -157,7 +158,7 @@ describe('createCheckin', () => {
     });
 
     await createCheckin({
-      episode_id: 'ep-1',
+      concern_id: undefined,
       week_start_date: '2026-01-06',
       adherence: {},
       changes: {},
@@ -165,10 +166,11 @@ describe('createCheckin', () => {
     });
 
     const params = __mockDb.runAsync.mock.calls[0][1];
-    expect(params[3]).toBe('{}');   // adherence_json
-    expect(params[4]).toBe('{}');   // changes_json
-    expect(params[5]).toBe('[]');   // events_json
-    expect(params[6]).toBeNull();   // confidence
+    expect(params[3]).toBe('2026-01-06'); // week_start_date
+    expect(params[4]).toBe('{}');         // adherence_json
+    expect(params[5]).toBe('{}');         // changes_json
+    expect(params[6]).toBe('[]');         // events_json
+    expect(params[7]).toBeNull();         // confidence
   });
 });
 
@@ -193,6 +195,7 @@ describe('updateCheckin', () => {
     expect(params[2]).toBe('{"diet":true}');          // changes (existing)
     expect(params[3]).toBe('["headache"]');            // events (existing)
     expect(params[4]).toBe('mostly');                  // confidence (updated)
+    expect(params[5]).toBeNull();                      // concern_id
   });
 });
 

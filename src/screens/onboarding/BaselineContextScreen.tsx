@@ -130,7 +130,7 @@ export function BaselineContextScreen({ navigation }: OnboardingScreenProps<'Bas
       routine,
       share_defaults: shareDefaults,
     });
-    navigation.navigate('EpisodeSetup');
+    navigation.navigate('InterventionSetup');
   };
 
   const toggleShare = (field: keyof ShareDefaults) => {
@@ -241,7 +241,7 @@ export function BaselineContextScreen({ navigation }: OnboardingScreenProps<'Bas
         <Button
           title="Skip for now"
           variant="ghost"
-          onPress={() => navigation.navigate('EpisodeSetup')}
+          onPress={() => navigation.navigate('InterventionSetup')}
         />
       </View>
     </ScreenContainer>

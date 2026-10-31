@@ -1,15 +1,13 @@
 // src/context/OnboardingContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { OnboardingState, BaselineContext, Episode, Intervention } from '../types';
+import { OnboardingState, BaselineContext, Intervention } from '../types';
 import { saveBaselineContext } from '../db/repositories/baselineContext';
-import { createEpisode } from '../db/repositories/episodes';
 import { createIntervention } from '../db/repositories/interventions';
-import { formatDateISO, getQuarterEndDate, getQuarterLabel } from '../utils/dates';
+import { formatDateISO } from '../utils/dates';
 
 interface OnboardingContextType {
   state: OnboardingState;
   updateBaseline: (data: Partial<BaselineContext>) => void;
-  updateEpisode: (data: Partial<Episode>) => void;
   addIntervention: (data: Partial<Intervention>) => void;
   removeIntervention: (index: number) => void;
   updateReminders: (data: OnboardingState['reminders']) => void;
@@ -27,17 +25,8 @@ const defaultReminders = {
 const OnboardingContext = createContext<OnboardingContextType | null>(null);
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
-  const today = new Date();
-  
   const [state, setState] = useState<OnboardingState>({
     baseline: {},
-    episode: {
-      title: getQuarterLabel(today),
-      start_date: formatDateISO(today),
-      end_date: formatDateISO(getQuarterEndDate(today)),
-      type: 'observational',
-      status: 'active',
-    },
     interventions: [],
     reminders: defaultReminders,
   });
@@ -48,13 +37,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({
       ...prev,
       baseline: { ...prev.baseline, ...data },
-    }));
-  };
-
-  const updateEpisode = (data: Partial<Episode>) => {
-    setState((prev) => ({
-      ...prev,
-      episode: { ...prev.episode, ...data },
     }));
   };
 
@@ -93,21 +75,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       share_defaults: state.baseline.share_defaults ?? {},
     });
 
-    // Create episode
-    const episode = await createEpisode({
-      title: state.episode.title ?? getQuarterLabel(new Date()),
-      start_date: state.episode.start_date ?? formatDateISO(new Date()),
-      end_date: state.episode.end_date ?? formatDateISO(getQuarterEndDate(new Date())),
-      type: state.episode.type ?? 'observational',
-      status: 'active',
-      special_summary: state.episode.special_summary,
-    });
-
-    // Create interventions
+    // Interventions are optional and independent of concerns.
     for (const intervention of state.interventions) {
       if (intervention.compound) {
         await createIntervention({
-          episode_id: episode.id,
           compound: intervention.compound,
           custom_name: intervention.custom_name,
           dose: intervention.dose,
@@ -120,6 +91,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
           brand: intervention.brand,
           product: intervention.product,
           notes: intervention.notes,
+          start_date: intervention.start_date ?? formatDateISO(new Date()),
+          end_date: intervention.end_date,
         });
       }
     }
@@ -135,7 +108,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       value={{
         state,
         updateBaseline,
-        updateEpisode,
         addIntervention,
         removeIntervention,
         updateReminders,

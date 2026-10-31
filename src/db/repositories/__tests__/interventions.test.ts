@@ -1,10 +1,11 @@
 import { __mockDb } from '../../../__mocks__/expo-sqlite';
 import { __resetUUID } from '../../../__mocks__/expo-crypto';
 import {
-  getInterventionsByEpisode,
+  getAllInterventions,
   getInterventionById,
   createIntervention,
   updateIntervention,
+  stopIntervention,
   deleteIntervention,
 } from '../interventions';
 
@@ -19,7 +20,6 @@ afterEach(() => jest.useRealTimers());
 
 const sampleRow = {
   id: 'int-1',
-  episode_id: 'ep-1',
   compound: 'nmn',
   custom_name: null,
   dose: 500,
@@ -32,22 +32,24 @@ const sampleRow = {
   brand: 'BrandX',
   product: 'NMN Pro',
   notes: null,
+  start_date: '2026-01-01',
+  end_date: null,
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
 };
 
-// ── getInterventionsByEpisode ───────────────────────────
+// ── getAllInterventions ──────────────────────────────────
 
-describe('getInterventionsByEpisode', () => {
+describe('getAllInterventions', () => {
   it('returns empty array when none exist', async () => {
     __mockDb.getAllAsync.mockResolvedValueOnce([]);
-    const result = await getInterventionsByEpisode('ep-1');
+    const result = await getAllInterventions();
     expect(result).toEqual([]);
   });
 
   it('returns mapped interventions with parsed timing JSON', async () => {
     __mockDb.getAllAsync.mockResolvedValueOnce([sampleRow]);
-    const result = await getInterventionsByEpisode('ep-1');
+    const result = await getAllInterventions();
     expect(result).toHaveLength(1);
     expect(result[0].timing).toEqual(['morning']);
     expect(result[0].notes).toBeUndefined(); // null → undefined
@@ -56,7 +58,7 @@ describe('getInterventionsByEpisode', () => {
 
   it('handles null timing_json as empty array', async () => {
     __mockDb.getAllAsync.mockResolvedValueOnce([{ ...sampleRow, timing_json: null }]);
-    const result = await getInterventionsByEpisode('ep-1');
+    const result = await getAllInterventions();
     expect(result[0].timing).toEqual([]);
   });
 });
@@ -65,7 +67,7 @@ describe('getInterventionsByEpisode', () => {
 
 describe('createIntervention', () => {
   it('serializes timing array to JSON', async () => {
-    __mockDb.runAsync.mockResolvedValueOnce({ changes: 1 });
+    __mockDb.runAsync.mockResolvedValue({ changes: 1 });
     __mockDb.getFirstAsync.mockResolvedValueOnce({
       ...sampleRow,
       id: 'test-uuid-1',
@@ -73,7 +75,6 @@ describe('createIntervention', () => {
     });
 
     const result = await createIntervention({
-      episode_id: 'ep-1',
       compound: 'nmn',
       dose: 500,
       unit: 'mg',
@@ -81,6 +82,7 @@ describe('createIntervention', () => {
       form: 'capsule',
       timing: ['morning', 'evening'],
       with_food: 'yes',
+      start_date: '2026-01-01',
     });
 
     expect(result.id).toBe('test-uuid-1');
@@ -88,11 +90,11 @@ describe('createIntervention', () => {
 
     const params = __mockDb.runAsync.mock.calls[0][1];
     expect(params[0]).toBe('test-uuid-1');             // id
-    expect(params[8]).toBe('["morning","evening"]');    // timing_json
+    expect(params[7]).toBe('["morning","evening"]');    // timing_json
   });
 
   it('passes null for optional fields when not provided', async () => {
-    __mockDb.runAsync.mockResolvedValueOnce({ changes: 1 });
+    __mockDb.runAsync.mockResolvedValue({ changes: 1 });
     __mockDb.getFirstAsync.mockResolvedValueOnce({
       ...sampleRow,
       id: 'test-uuid-1',
@@ -102,16 +104,16 @@ describe('createIntervention', () => {
     });
 
     await createIntervention({
-      episode_id: 'ep-1',
       compound: 'nmn',
       timing: [],
+      start_date: '2026-01-01',
     });
 
     const params = __mockDb.runAsync.mock.calls[0][1];
-    expect(params[4]).toBeNull();  // dose
-    expect(params[5]).toBeNull();  // unit
-    expect(params[11]).toBeNull(); // brand
-    expect(params[12]).toBeNull(); // product
+    expect(params[3]).toBeNull();  // dose
+    expect(params[4]).toBeNull();  // unit
+    expect(params[10]).toBeNull(); // brand
+    expect(params[11]).toBeNull(); // product
   });
 });
 
@@ -137,7 +139,7 @@ describe('updateIntervention', () => {
         dose: 1000,
         updated_at: '2026-03-15T12:00:00.000Z',
       });
-    __mockDb.runAsync.mockResolvedValueOnce({ changes: 1 });
+    __mockDb.runAsync.mockResolvedValue({ changes: 1 });
 
     const result = await updateIntervention('int-1', { dose: 1000 });
     expect(result!.dose).toBe(1000);
@@ -152,12 +154,27 @@ describe('updateIntervention', () => {
     __mockDb.getFirstAsync
       .mockResolvedValueOnce(sampleRow)
       .mockResolvedValueOnce({ ...sampleRow, timing_json: '["evening"]' });
-    __mockDb.runAsync.mockResolvedValueOnce({ changes: 1 });
+    __mockDb.runAsync.mockResolvedValue({ changes: 1 });
 
     await updateIntervention('int-1', { timing: ['evening'] });
 
     const params = __mockDb.runAsync.mock.calls[0][1];
     expect(params[6]).toBe('["evening"]');
+  });
+});
+
+describe('stopIntervention', () => {
+  it('records an end date and stop event', async () => {
+    __mockDb.getFirstAsync
+      .mockResolvedValueOnce(sampleRow)
+      .mockResolvedValueOnce({ ...sampleRow, end_date: '2026-03-15' });
+    __mockDb.runAsync.mockResolvedValue({ changes: 1 });
+
+    const result = await stopIntervention('int-1', '2026-03-15');
+
+    expect(result?.end_date).toBe('2026-03-15');
+    expect(__mockDb.runAsync.mock.calls[0][0]).toContain('UPDATE interventions SET end_date');
+    expect(__mockDb.runAsync.mock.calls[1][1][3]).toBe('stopped');
   });
 });
 

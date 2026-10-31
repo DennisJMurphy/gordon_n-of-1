@@ -11,9 +11,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '../../components/ui';
 import { DayDetailSheet } from '../../components/DayDetailSheet';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
-import { MainTabScreenProps } from '../../navigation/types';
-import { Episode } from '../../types';
-import { getActiveEpisode } from '../../db/repositories/episodes';
 import { getDatesWithNotes } from '../../db/repositories/dayNotes';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -21,8 +18,7 @@ const DAY_SIZE = (SCREEN_WIDTH - spacing.lg * 2 - spacing.xs * 6) / 7;
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export function CalendarScreen({ navigation }: MainTabScreenProps<'Calendar'>) {
-  const [episode, setEpisode] = useState<Episode | null>(null);
+export function CalendarScreen() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [datesWithNotes, setDatesWithNotes] = useState<Set<string>>(new Set());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -31,13 +27,8 @@ export function CalendarScreen({ navigation }: MainTabScreenProps<'Calendar'>) {
 
   const loadData = useCallback(async () => {
     try {
-      const activeEpisode = await getActiveEpisode();
-      setEpisode(activeEpisode);
-
-      if (activeEpisode) {
-        const notes = await getDatesWithNotes(activeEpisode.id);
-        setDatesWithNotes(notes);
-      }
+      const notes = await getDatesWithNotes();
+      setDatesWithNotes(notes);
     } catch (error) {
       console.error('Failed to load calendar data:', error);
     } finally {
@@ -68,7 +59,6 @@ export function CalendarScreen({ navigation }: MainTabScreenProps<'Calendar'>) {
   };
 
   const handleDayPress = (date: string) => {
-    if (!episode) return;
     setSelectedDate(date);
     setSheetVisible(true);
   };
@@ -122,7 +112,6 @@ export function CalendarScreen({ navigation }: MainTabScreenProps<'Calendar'>) {
           }
 
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const isInEpisode = episode ? isDateInRange(dateStr, episode.start_date, episode.end_date) : false;
           const hasNote = datesWithNotes.has(dateStr);
           const isToday = isDateToday(dateStr);
 
@@ -131,16 +120,13 @@ export function CalendarScreen({ navigation }: MainTabScreenProps<'Calendar'>) {
               key={dayIndex}
               style={[
                 styles.dayCell,
-                isInEpisode && styles.dayCellInEpisode,
                 isToday && styles.dayCellToday,
               ]}
               onPress={() => handleDayPress(dateStr)}
-              disabled={!isInEpisode}
             >
               <Text
                 style={[
                   styles.dayText,
-                  !isInEpisode && styles.dayTextDisabled,
                   isToday && styles.dayTextToday,
                 ]}
               >
@@ -164,19 +150,6 @@ export function CalendarScreen({ navigation }: MainTabScreenProps<'Calendar'>) {
     );
   }
 
-  if (!episode) {
-    return (
-      <ScreenContainer>
-        <View style={styles.centered}>
-          <Text style={styles.noEpisodeText}>No active episode</Text>
-          <Text style={styles.noEpisodeHint}>
-            Start an episode to track day-by-day notes
-          </Text>
-        </View>
-      </ScreenContainer>
-    );
-  }
-
   const monthYear = currentMonth.toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
@@ -187,9 +160,7 @@ export function CalendarScreen({ navigation }: MainTabScreenProps<'Calendar'>) {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Calendar</Text>
-        <Text style={styles.episodeRange}>
-          {formatDateShort(episode.start_date)} — {formatDateShort(episode.end_date)}
-        </Text>
+        <Text style={styles.calendarHint}>Select any date to add or edit a note.</Text>
       </View>
 
       {/* Month Navigation */}
@@ -221,10 +192,6 @@ export function CalendarScreen({ navigation }: MainTabScreenProps<'Calendar'>) {
           <View style={[styles.legendDot, styles.noteDot]} />
           <Text style={styles.legendText}>Has note</Text>
         </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendBox, styles.dayCellInEpisode]} />
-          <Text style={styles.legendText}>In episode</Text>
-        </View>
       </View>
 
       {/* Day Detail Sheet */}
@@ -235,7 +202,6 @@ export function CalendarScreen({ navigation }: MainTabScreenProps<'Calendar'>) {
             setSheetVisible(false);
             setSelectedDate(null);
           }}
-          episodeId={episode.id}
           date={selectedDate}
           onNoteChanged={handleNoteChanged}
         />
@@ -244,19 +210,10 @@ export function CalendarScreen({ navigation }: MainTabScreenProps<'Calendar'>) {
   );
 }
 
-function isDateInRange(date: string, start: string, end: string): boolean {
-  return date >= start && date <= end;
-}
-
 function isDateToday(dateStr: string): boolean {
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   return dateStr === todayStr;
-}
-
-function formatDateShort(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 const styles = StyleSheet.create({
@@ -269,17 +226,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
   },
-  noEpisodeText: {
-    fontSize: fontSize.lg,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  noEpisodeHint: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-    textAlign: 'center',
-  },
   header: {
     paddingVertical: spacing.lg,
   },
@@ -287,11 +233,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: '700',
     color: colors.textPrimary,
-  },
-  episodeRange: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
   },
   monthNav: {
     flexDirection: 'row',
@@ -340,9 +281,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: borderRadius.md,
   },
-  dayCellInEpisode: {
-    backgroundColor: colors.surface,
-  },
   dayCellToday: {
     borderWidth: 2,
     borderColor: colors.accent,
@@ -350,10 +288,6 @@ const styles = StyleSheet.create({
   dayText: {
     fontSize: fontSize.md,
     color: colors.textPrimary,
-  },
-  dayTextDisabled: {
-    color: colors.textMuted,
-    opacity: 0.4,
   },
   dayTextToday: {
     fontWeight: '700',

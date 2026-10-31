@@ -15,27 +15,26 @@ import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { HomeStackParamList } from '../../navigation/types';
 import { WeeklyCheckin } from '../../types';
 import {
-  getCheckinsByEpisode,
+  getAllCheckins,
   deleteCheckin,
 } from '../../db/repositories/weeklyCheckins';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'CheckinHistory'>;
 
-export function CheckinHistoryScreen({ navigation, route }: Props) {
-  const { episodeId } = route.params;
+export function CheckinHistoryScreen({ navigation }: Props) {
   const [checkins, setCheckins] = useState<WeeklyCheckin[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadCheckins = useCallback(async () => {
     try {
-      const data = await getCheckinsByEpisode(episodeId);
+      const data = await getAllCheckins();
       setCheckins(data);
     } catch (error) {
       console.error('Failed to load check-ins:', error);
     } finally {
       setLoading(false);
     }
-  }, [episodeId]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -45,7 +44,6 @@ export function CheckinHistoryScreen({ navigation, route }: Props) {
 
   const handleEdit = (checkin: WeeklyCheckin) => {
     navigation.navigate('WeeklyCheckin', {
-      episodeId,
       checkinId: checkin.id,
     });
   };

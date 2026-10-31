@@ -1,504 +1,154 @@
-// src/screens/main/HomeScreen.tsx
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList } from 'react-native';
-import { useFocusEffect, useNavigation, CompositeNavigationProp } from '@react-navigation/native';
-import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { ScreenContainer } from '../../components/ui';
-import { colors, spacing, fontSize, borderRadius } from '../../theme';
-import { HomeStackParamList, MainTabParamList } from '../../navigation/types';
-import { Episode, Intervention, WeeklyCheckin } from '../../types';
-import { getActiveEpisode } from '../../db/repositories/episodes';
-import { getInterventionsByEpisode } from '../../db/repositories/interventions';
-import { getCheckinsByEpisode, getLatestCheckin, getCurrentWeekStart } from '../../db/repositories/weeklyCheckins';
-import { formatDateDisplay } from '../../utils/dates';
+import React, { useCallback, useState } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { Button, ScreenContainer } from '../../components/ui';
+import { HomeStackScreenProps } from '../../navigation/types';
+import { Concern, Intervention, WeeklyCheckin } from '../../types';
+import { getAllConcerns } from '../../db/repositories/concerns';
+import { getAllInterventions } from '../../db/repositories/interventions';
+import { getAllCheckins, getCurrentWeekStart } from '../../db/repositories/weeklyCheckins';
+import { formatApproximateDate, formatDateDisplay } from '../../utils/dates';
+import { colors, fontSize, spacing, borderRadius } from '../../theme';
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
-
-// Composite navigation type to navigate both within stack and to other tabs
-type HomeNavigationProp = CompositeNavigationProp<
-  NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>,
-  BottomTabNavigationProp<MainTabParamList>
->;
+type Props = HomeStackScreenProps<'HomeMain'>;
 
 export function HomeScreen({ navigation }: Props) {
-  // Get parent navigation to switch tabs
-  const tabNavigation = useNavigation<HomeNavigationProp>();
-  
-  const [episode, setEpisode] = useState<Episode | null>(null);
+  const [concerns, setConcerns] = useState<Concern[]>([]);
   const [interventions, setInterventions] = useState<Intervention[]>([]);
-  const [recentCheckins, setRecentCheckins] = useState<WeeklyCheckin[]>([]);
-  const [hasCurrentWeekCheckin, setHasCurrentWeekCheckin] = useState(false);
+  const [checkins, setCheckins] = useState<WeeklyCheckin[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
-      const activeEpisode = await getActiveEpisode();
-      setEpisode(activeEpisode);
-
-      if (activeEpisode) {
-        const [episodeInterventions, checkins, latestCheckin] = await Promise.all([
-          getInterventionsByEpisode(activeEpisode.id),
-          getCheckinsByEpisode(activeEpisode.id),
-          getLatestCheckin(activeEpisode.id),
-        ]);
-        setInterventions(episodeInterventions);
-        setRecentCheckins(checkins.slice(0, 3)); // Show last 3
-
-        // Check if we have a check-in for the current week
-        const currentWeek = getCurrentWeekStart();
-        setHasCurrentWeekCheckin(latestCheckin?.week_start_date === currentWeek);
-      }
+      const [concernRows, interventionRows, checkinRows] = await Promise.all([
+        getAllConcerns(),
+        getAllInterventions(),
+        getAllCheckins(),
+      ]);
+      setConcerns(concernRows);
+      setInterventions(interventionRows.filter((item) => !item.end_date));
+      setCheckins(checkinRows.slice(0, 3));
     } catch (error) {
-      console.error('Failed to load episode:', error);
+      console.error('Failed to load home data:', error);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
+  useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
-  const handleStartCheckin = () => {
-    if (episode) {
-      navigation.navigate('WeeklyCheckin', { episodeId: episode.id });
-    }
-  };
-
-  const handleViewHistory = () => {
-    if (episode) {
-      navigation.navigate('CheckinHistory', { episodeId: episode.id });
-    }
-  };
-
-  const handleEditCheckin = (checkin: WeeklyCheckin) => {
-    if (episode) {
-      navigation.navigate('WeeklyCheckin', { 
-        episodeId: episode.id, 
-        checkinId: checkin.id 
-      });
-    }
-  };
-
-  const handleAddNote = () => {
-    tabNavigation.navigate('Calendar');
-  };
-
-  const handleCloseEpisode = () => {
-    if (episode) {
-      navigation.navigate('PrivacyPreview', { episodeId: episode.id });
-    }
-  };
+  const currentWeek = getCurrentWeekStart();
+  const currentWeekCheckin = checkins.find((item) => item.week_start_date === currentWeek);
 
   if (loading) {
-    return (
-      <ScreenContainer>
-        <View style={styles.centered}>
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </ScreenContainer>
-    );
+    return <ScreenContainer><Text style={styles.muted}>Loading...</Text></ScreenContainer>;
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer scrollable>
       <View style={styles.header}>
-        <View style={styles.greetingRow}>
-          <Image 
-            source={require('../../../assets/icon.png')} 
-            style={styles.headerIcon}
-          />
-          <Text style={styles.greeting}>Gordon</Text>
-        </View>
+        <Image source={require('../../../assets/icon.png')} style={styles.icon} />
+        <Text style={styles.greeting}>Gordon</Text>
       </View>
 
-      {episode ? (
-        <View style={styles.content}>
-          {/* Episode Card */}
-          <View style={styles.episodeCard}>
-            <View style={styles.episodeHeader}>
-              <Text style={styles.episodeTitle}>{episode.title}</Text>
-              <View style={[styles.badge, episode.type === 'intervention' ? styles.badgeIntervention : styles.badgeObservational]}>
-                <Text style={styles.badgeText}>{episode.type}</Text>
-              </View>
-            </View>
+      <View style={styles.actionRow}>
+        <View style={styles.actionPrimary}>
+          <Button title="Record a concern" onPress={() => navigation.navigate('NewConcern')} />
+        </View>
+        <TouchableOpacity style={styles.smallAction} onPress={() => navigation.navigate('InterventionSetup')}>
+          <Text style={styles.smallActionText}>Add intervention</Text>
+        </TouchableOpacity>
+      </View>
 
-            <Text style={styles.dateRange}>
-              {formatDateDisplay(episode.start_date)} → {formatDateDisplay(episode.end_date)}
-            </Text>
-
-            {episode.special_summary && (
-              <Text style={styles.summary}>{episode.special_summary}</Text>
-            )}
-
-            {interventions.length > 0 && (
-              <View style={styles.interventionsPreview}>
-                <Text style={styles.interventionsLabel}>Tracking:</Text>
-                <Text style={styles.interventionsList}>
-                  {interventions.map((i) => i.compound.toUpperCase()).join(', ')}
-                </Text>
-              </View>
-            )}
-
-            {/* Close Episode Button */}
-            <TouchableOpacity 
-              style={styles.closeEpisodeButton}
-              onPress={handleCloseEpisode}
-            >
-              <Text style={styles.closeEpisodeButtonText}>Close Episode & Generate Report</Text>
-            </TouchableOpacity>
+      <Section title="Concerns" />
+      {concerns.length === 0 ? (
+        <Text style={styles.emptyText}>No concerns recorded.</Text>
+      ) : concerns.map((concern) => (
+        <TouchableOpacity
+          key={concern.id}
+          style={styles.listRow}
+          onPress={() => navigation.navigate('ConcernDetail', { concernId: concern.id })}
+        >
+          <View style={styles.rowCopy}>
+            <Text style={styles.rowTitle}>{concern.title}</Text>
+            <Text style={styles.rowDetail}>Onset: {formatApproximateDate(concern.onset_date)}</Text>
           </View>
+          <Text style={[styles.status, concern.status === 'resolved' && styles.resolved]}>
+            {concern.status === 'open' ? 'Ongoing' : 'Resolved'}
+          </Text>
+        </TouchableOpacity>
+      ))}
 
-          {/* Next Check-in */}
-          <View style={[styles.checkinCard, hasCurrentWeekCheckin && styles.checkinCardCompleted]}>
-            <View style={styles.checkinHeader}>
-              <Text style={styles.checkinLabel}>Weekly Check-in</Text>
-              {hasCurrentWeekCheckin && (
-                <Text style={styles.checkinBadge}>✅ Done</Text>
-              )}
-            </View>
-            <Text style={styles.checkinHint}>
-              {hasCurrentWeekCheckin 
-                ? 'You\'ve completed this week\'s check-in' 
-                : 'Less than 60 seconds to record your week'
-              }
-            </Text>
-            <TouchableOpacity 
-              style={styles.checkinButton}
-              onPress={handleStartCheckin}
-            >
-              <Text style={styles.checkinButtonText}>
-                {hasCurrentWeekCheckin ? 'Edit Check-in →' : 'Start Check-in →'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Recent Check-ins */}
-          {recentCheckins.length > 0 && (
-            <View style={styles.recentSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Recent Check-ins</Text>
-                <TouchableOpacity onPress={handleViewHistory}>
-                  <Text style={styles.viewAllLink}>View All</Text>
-                </TouchableOpacity>
-              </View>
-              {recentCheckins.map((checkin) => (
-                <TouchableOpacity
-                  key={checkin.id}
-                  style={styles.recentCheckinCard}
-                  onPress={() => handleEditCheckin(checkin)}
-                >
-                  <View style={styles.recentCheckinHeader}>
-                    <Text style={styles.recentCheckinDate}>
-                      {formatWeekDate(checkin.week_start_date)}
-                    </Text>
-                    <Text style={styles.recentCheckinConfidence}>
-                      {checkin.confidence === 'sure' ? '💯' : checkin.confidence === 'mostly' ? '👍' : '🤷'}
-                    </Text>
-                  </View>
-                  <View style={styles.adherencePreview}>
-                    {Object.entries(checkin.adherence).slice(0, 3).map(([compound, level]) => (
-                      <View key={compound} style={styles.adherenceChip}>
-                        <Text style={styles.adherenceCompound}>{compound.toUpperCase()}</Text>
-                        <Text style={styles.adherenceLevel}>{getAdherenceEmoji(level)}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
-          {/* Quick Actions */}
-          <View style={styles.actionsSection}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.actionsGrid}>
-              <TouchableOpacity style={styles.actionCard} onPress={handleAddNote}>
-                <Text style={styles.actionIcon}>📝</Text>
-                <Text style={styles.actionLabel}>Add Note</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.actionCard}
-                onPress={handleViewHistory}
-              >
-                <Text style={styles.actionIcon}>📋</Text>
-                <Text style={styles.actionLabel}>Check-in History</Text>
-              </TouchableOpacity>
-            </View>
+      <Section title="Ongoing interventions" />
+      {interventions.length === 0 ? (
+        <Text style={styles.emptyText}>No ongoing interventions recorded.</Text>
+      ) : interventions.map((item) => (
+        <View key={item.id} style={styles.listRow}>
+          <View style={styles.rowCopy}>
+            <Text style={styles.rowTitle}>{interventionName(item)}</Text>
+            <Text style={styles.rowDetail}>Since {formatApproximateDate(item.start_date)}</Text>
           </View>
         </View>
-      ) : (
-        <TouchableOpacity 
-          style={styles.centered}
-          onPress={() => navigation.navigate('NewEpisode')}
-          activeOpacity={0.7}
+      ))}
+
+      <Section title="Check-ins" action="View all" onAction={() => navigation.navigate('CheckinHistory')} />
+      <Button
+        title={currentWeekCheckin ? 'Edit this week’s check-in' : 'Optional weekly check-in'}
+        variant="secondary"
+        onPress={() => navigation.navigate('WeeklyCheckin', { checkinId: currentWeekCheckin?.id })}
+      />
+      {checkins.map((checkin) => (
+        <TouchableOpacity
+          key={checkin.id}
+          style={styles.checkinRow}
+          onPress={() => navigation.navigate('WeeklyCheckin', { checkinId: checkin.id })}
         >
-          <Text style={styles.noEpisodeText}>No active episode</Text>
-          <Text style={styles.noEpisodeHint}>Tap to create a new episode →</Text>
+          <Text style={styles.rowTitle}>Week of {formatDateDisplay(checkin.week_start_date)}</Text>
+          <Text style={styles.rowDetail}>{checkin.events.length} note{checkin.events.length === 1 ? '' : 's'}</Text>
         </TouchableOpacity>
-      )}
+      ))}
     </ScreenContainer>
   );
 }
 
-function formatWeekDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
+function Section({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {action && onAction && (
+        <TouchableOpacity onPress={onAction}>
+          <Text style={styles.sectionAction}>{action}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 }
 
-function getAdherenceEmoji(level: string): string {
-  const emojis: Record<string, string> = {
-    every_day: '✅',
-    most_days: '👍',
-    some_days: '🤷',
-    rarely: '😅',
-    not_at_all: '❌',
-  };
-  return emojis[level] || '?';
+function interventionName(item: Intervention): string {
+  const name = item.compound === 'other' && item.custom_name
+    ? item.custom_name
+    : item.compound.toUpperCase();
+  return `${name}${item.dose ? ` ${item.dose}${item.unit || ''}` : ''}`;
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingVertical: spacing.lg,
-  },
-  greetingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    width: 32,
-    height: 32,
-    marginRight: spacing.sm,
-  },
-  greeting: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  content: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-  },
-  noEpisodeText: {
-    fontSize: fontSize.lg,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  noEpisodeHint: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-  },
-  episodeCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  episodeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  episodeTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    flex: 1,
-  },
-  badge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-  },
-  badgeObservational: {
-    backgroundColor: colors.border,
-  },
-  badgeIntervention: {
-    backgroundColor: colors.accent,
-  },
-  badgeText: {
-    fontSize: fontSize.xs,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    textTransform: 'capitalize',
-  },
-  dateRange: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
-  summary: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-  },
-  interventionsPreview: {
-    flexDirection: 'row',
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  interventionsLabel: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    marginRight: spacing.sm,
-  },
-  interventionsList: {
-    fontSize: fontSize.sm,
-    color: colors.accent,
-    fontWeight: '600',
-  },
-  closeEpisodeButton: {
-    marginTop: spacing.lg,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  closeEpisodeButtonText: {
-    fontSize: fontSize.sm,
-    color: colors.warning,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  checkinCard: {
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  checkinCardCompleted: {
-    borderColor: colors.success,
-    backgroundColor: colors.surface,
-  },
-  checkinHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  checkinBadge: {
-    fontSize: fontSize.sm,
-    color: colors.success,
-    fontWeight: '600',
-  },
-  checkinLabel: {
-    fontSize: fontSize.md,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  checkinHint: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  checkinButton: {
-    marginTop: spacing.md,
-  },
-  checkinButtonText: {
-    fontSize: fontSize.md,
-    color: colors.accent,
-    fontWeight: '600',
-  },
-  actionsSection: {
-    marginTop: spacing.md,
-  },
-  recentSection: {
-    marginBottom: spacing.md,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  viewAllLink: {
-    fontSize: fontSize.sm,
-    color: colors.accent,
-    fontWeight: '500',
-  },
-  sectionTitle: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  recentCheckinCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  recentCheckinHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  recentCheckinDate: {
-    fontSize: fontSize.md,
-    color: colors.textPrimary,
-    fontWeight: '500',
-  },
-  recentCheckinConfidence: {
-    fontSize: fontSize.md,
-  },
-  adherencePreview: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  adherenceChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.md,
-    gap: spacing.xs,
-  },
-  adherenceCompound: {
-    fontSize: fontSize.xs,
-    color: colors.accent,
-    fontWeight: '600',
-  },
-  adherenceLevel: {
-    fontSize: fontSize.sm,
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  actionCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-  },
-  actionIcon: {
-    fontSize: 24,
-    marginBottom: spacing.xs,
-  },
-  actionLabel: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.lg },
+  icon: { width: 32, height: 32, marginRight: spacing.sm },
+  greeting: { color: colors.textPrimary, fontSize: fontSize.xl, fontWeight: '700' },
+  actionRow: { gap: spacing.sm, marginBottom: spacing.lg },
+  actionPrimary: { width: '100%' },
+  smallAction: { paddingVertical: spacing.sm },
+  smallActionText: { color: colors.accent, fontSize: fontSize.md, fontWeight: '600', textAlign: 'center' },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg, marginBottom: spacing.sm },
+  sectionTitle: { color: colors.textMuted, fontSize: fontSize.sm, fontWeight: '600', textTransform: 'uppercase' },
+  sectionAction: { color: colors.accent, fontSize: fontSize.sm },
+  listRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, padding: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.surface, borderRadius: borderRadius.md },
+  rowCopy: { flex: 1 },
+  rowTitle: { color: colors.textPrimary, fontSize: fontSize.md, fontWeight: '600' },
+  rowDetail: { color: colors.textSecondary, fontSize: fontSize.sm, marginTop: spacing.xs },
+  status: { color: colors.accent, fontSize: fontSize.xs, fontWeight: '600' },
+  resolved: { color: colors.success },
+  emptyText: { color: colors.textMuted, fontSize: fontSize.sm, paddingVertical: spacing.md },
+  checkinRow: { paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
+  muted: { color: colors.textSecondary, fontSize: fontSize.md },
 });

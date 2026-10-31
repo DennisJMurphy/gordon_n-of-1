@@ -16,23 +16,22 @@ export function IntroScreen({ navigation }: OnboardingScreenProps<'Intro'>) {
             resizeMode="contain"
           />
           <Text style={styles.title}>Gordon</Text>
-          <Text style={styles.subtitle}>an n-of-1 report tool</Text>
+          <Text style={styles.subtitle}>personal health tracking</Text>
         </View>
 
         <View style={styles.taglineContainer}>
           <Text style={styles.tagline}>
-            Anonymous episode reports for science.
+            A personal health timeline, on your terms.
           </Text>
           <Text style={styles.description}>
-            Turn personal self-experiments into structured, privacy-aware summaries 
-            — without tracking your whole life.
+            Record concerns, changes and observations over time. Check-ins and reports are optional.
           </Text>
         </View>
 
         <View style={styles.principles}>
-          <Text style={styles.principleItem}>📊 Episodes over diaries</Text>
+          <Text style={styles.principleItem}>🗓️ Concerns and changes over time</Text>
           <Text style={styles.principleItem}>🔒 Nothing leaves without consent</Text>
-          <Text style={styles.principleItem}>⏱️ ~60 seconds per week</Text>
+          <Text style={styles.principleItem}>✍️ Record only what matters to you</Text>
         </View>
       </View>
 

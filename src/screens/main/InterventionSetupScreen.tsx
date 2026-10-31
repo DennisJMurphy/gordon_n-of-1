@@ -5,8 +5,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer, Button, Select, TextInput } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { HomeStackScreenProps } from '../../navigation/types';
-import { Compound, Route, Form, WithFood, Timing, Frequency, Intervention } from '../../types';
-import { createIntervention, getInterventionsByEpisode, deleteIntervention } from '../../db/repositories/interventions';
+import { Compound, Route, Form, WithFood, Timing, Frequency, Intervention, InterventionEvent } from '../../types';
+import { createIntervention, getAllInterventions, getInterventionEvents, updateIntervention, stopIntervention, deleteIntervention } from '../../db/repositories/interventions';
+import { formatDateISO, isValidApproximateDate } from '../../utils/dates';
 
 const COMPOUND_OPTIONS: { label: string; value: Compound }[] = [
   { label: 'NMN', value: 'nmn' },
@@ -52,18 +53,20 @@ const WITH_FOOD_OPTIONS: { label: string; value: WithFood }[] = [
   { label: 'Mixed', value: 'mixed' },
 ];
 
-function getInterventionLabel(i: Intervention): string {
-  const name = i.compound === 'other' && i.custom_name ? i.custom_name : i.compound.toUpperCase();
+function getInterventionLabel(i: Partial<Intervention>): string {
+  const name = i.compound === 'other' && i.custom_name
+    ? i.custom_name
+    : i.compound?.toUpperCase() ?? 'Intervention';
   const doseStr = i.dose ? ` ${i.dose}${i.unit || ''}` : '';
   return `${name}${doseStr}`;
 }
 
 type Props = HomeStackScreenProps<'InterventionSetup'>;
 
-export function InterventionSetupScreen({ navigation, route }: Props) {
-  const { episodeId } = route.params;
-
+export function InterventionSetupScreen({ navigation }: Props) {
   const [savedInterventions, setSavedInterventions] = useState<Intervention[]>([]);
+  const [interventionEvents, setInterventionEvents] = useState<Record<string, InterventionEvent[]>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [compound, setCompound] = useState<Compound>('nmn');
   const [customName, setCustomName] = useState('');
   const [dose, setDose] = useState('');
@@ -75,6 +78,7 @@ export function InterventionSetupScreen({ navigation, route }: Props) {
   const [withFood, setWithFood] = useState<WithFood>('no');
   const [brand, setBrand] = useState('');
   const [product, setProduct] = useState('');
+  const [startDate, setStartDate] = useState(formatDateISO(new Date()));
 
   const [includeTmg, setIncludeTmg] = useState(false);
   const [tmgDose, setTmgDose] = useState('');
@@ -83,12 +87,17 @@ export function InterventionSetupScreen({ navigation, route }: Props) {
 
   const loadSaved = useCallback(async () => {
     try {
-      const existing = await getInterventionsByEpisode(episodeId);
+      const existing = await getAllInterventions();
       setSavedInterventions(existing);
+      const eventEntries = await Promise.all(existing.map(async (item) => [
+        item.id,
+        await getInterventionEvents(item.id),
+      ] as const));
+      setInterventionEvents(Object.fromEntries(eventEntries));
     } catch (error) {
       console.error('Failed to load interventions:', error);
     }
-  }, [episodeId]);
+  }, []);
 
   useFocusEffect(useCallback(() => { loadSaved(); }, [loadSaved]));
 
@@ -104,6 +113,8 @@ export function InterventionSetupScreen({ navigation, route }: Props) {
     setWithFood('no');
     setBrand('');
     setProduct('');
+    setStartDate(formatDateISO(new Date()));
+    setEditingId(null);
     setIncludeTmg(false);
     setTmgDose('');
   };
@@ -119,11 +130,14 @@ export function InterventionSetupScreen({ navigation, route }: Props) {
       Alert.alert('Name required', 'Please enter a name for this intervention.');
       return;
     }
+    if (!isValidApproximateDate(startDate.trim())) {
+      Alert.alert('Check the start date', 'Use YYYY, YYYY-MM or YYYY-MM-DD.');
+      return;
+    }
 
     setSaving(true);
     try {
-      await createIntervention({
-        episode_id: episodeId,
+      const interventionData = {
         compound,
         custom_name: compound === 'other' ? customName.trim() : undefined,
         dose: dose ? parseFloat(dose) : undefined,
@@ -135,11 +149,17 @@ export function InterventionSetupScreen({ navigation, route }: Props) {
         with_food: withFood,
         brand: brand || undefined,
         product: product || undefined,
-      });
+        start_date: startDate.trim(),
+      };
 
-      if (includeTmg) {
+      if (editingId) {
+        await updateIntervention(editingId, interventionData);
+      } else {
+        await createIntervention(interventionData);
+      }
+
+      if (includeTmg && !editingId) {
         await createIntervention({
-          episode_id: episodeId,
           compound: 'tmg',
           dose: tmgDose ? parseFloat(tmgDose) : undefined,
           unit: 'mg',
@@ -148,6 +168,7 @@ export function InterventionSetupScreen({ navigation, route }: Props) {
           timing,
           frequency: 'daily',
           with_food: withFood,
+          start_date: startDate.trim(),
         });
       }
 
@@ -163,6 +184,36 @@ export function InterventionSetupScreen({ navigation, route }: Props) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEdit = (item: Intervention) => {
+    setEditingId(item.id);
+    setCompound(item.compound);
+    setCustomName(item.custom_name ?? '');
+    setDose(item.dose?.toString() ?? '');
+    setUnit(item.unit ?? 'mg');
+    setRouteVal(item.route ?? 'oral');
+    setForm(item.form ?? 'powder');
+    setTiming(item.timing);
+    setFrequency(item.frequency ?? 'daily');
+    setWithFood(item.with_food ?? 'no');
+    setBrand(item.brand ?? '');
+    setProduct(item.product ?? '');
+    setStartDate(item.start_date);
+    setIncludeTmg(false);
+  };
+
+  const handleStop = (item: Intervention) => {
+    Alert.alert('Stop intervention', `Record ${getInterventionLabel(item)} as stopped today?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Stop',
+        onPress: async () => {
+          await stopIntervention(item.id, formatDateISO(new Date()));
+          await loadSaved();
+        },
+      },
+    ]);
   };
 
   const handleDelete = (id: string) => {
@@ -188,7 +239,7 @@ export function InterventionSetupScreen({ navigation, route }: Props) {
       <View style={styles.header}>
         <Text style={styles.title}>Define Your Intervention</Text>
         <Text style={styles.subtitle}>
-          What are you trying? You can add multiple interventions.
+          Record an intervention once and update it when something changes.
         </Text>
       </View>
 
@@ -198,10 +249,30 @@ export function InterventionSetupScreen({ navigation, route }: Props) {
           <Text style={styles.savedTitle}>Saved ({savedInterventions.length})</Text>
           {savedInterventions.map((item) => (
             <View key={item.id} style={styles.savedItem}>
-              <Text style={styles.savedItemText}>{getInterventionLabel(item)}</Text>
-              <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                <Text style={styles.deleteText}>✕</Text>
-              </TouchableOpacity>
+              <View style={styles.savedItemCopy}>
+                <Text style={styles.savedItemText}>{getInterventionLabel(item)}</Text>
+                <Text style={styles.savedItemDate}>
+                  {item.end_date ? `Stopped ${item.end_date}` : `Since ${item.start_date}`}
+                </Text>
+                {(interventionEvents[item.id] ?? []).map((event) => (
+                  <Text key={event.id} style={styles.savedItemDate}>
+                    {event.event_type === 'started' ? 'Started' : event.event_type === 'stopped' ? 'Stopped' : 'Changed'} {getInterventionLabel(event.details)} · {event.event_date}
+                  </Text>
+                ))}
+              </View>
+              <View style={styles.savedItemActions}>
+                <TouchableOpacity onPress={() => handleEdit(item)}>
+                  <Text style={styles.actionText}>Edit</Text>
+                </TouchableOpacity>
+                {!item.end_date && (
+                  <TouchableOpacity onPress={() => handleStop(item)}>
+                    <Text style={styles.actionText}>Stop</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                  <Text style={styles.deleteText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
         </View>
@@ -311,6 +382,15 @@ export function InterventionSetupScreen({ navigation, route }: Props) {
           placeholder="e.g., Uthever NMN"
         />
 
+        <TextInput
+          label="Start date"
+          value={startDate}
+          onChangeText={setStartDate}
+          placeholder="YYYY, YYYY-MM or YYYY-MM-DD"
+          autoCapitalize="none"
+          maxLength={10}
+        />
+
         {/* TMG co-intervention — only shown when primary is NMN */}
         {compound === 'nmn' && (
           <View style={styles.coInterventionSection}>
@@ -343,7 +423,7 @@ export function InterventionSetupScreen({ navigation, route }: Props) {
 
       <View style={styles.footer}>
         <Button
-          title={saving ? 'Saving...' : 'Save Intervention'}
+          title={saving ? 'Saving...' : editingId ? 'Save changes' : 'Save intervention'}
           onPress={() => handleSave(false)}
           disabled={saving}
         />
@@ -413,6 +493,10 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     flex: 1,
   },
+  savedItemCopy: { flex: 1 },
+  savedItemDate: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xs },
+  savedItemActions: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  actionText: { color: colors.accent, fontSize: fontSize.xs, fontWeight: '600' },
   deleteText: {
     fontSize: fontSize.md,
     color: colors.error,

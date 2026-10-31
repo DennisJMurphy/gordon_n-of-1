@@ -1,8 +1,8 @@
-Gordon: an n-of-1 report tool  
+Gordon: personal health tracking
 
-**Gordon** is a privacy-first tool for turning personal self-experiments into structured, anonymized n-of-1 reports suitable for scientific analysis.  
+**Gordon** is a privacy-first personal health timeline. Record concerns and dated updates, ongoing interventions, notes and optional check-ins; core data stays on-device in SQLite. Reports are temporarily unavailable while the report model is redesigned for continuous history.
 
-I built this app using a method I call "Guided Iteration". The story:  
+I built this app using a method I call "Guided Iteration". The original concept used bounded episode reports; the current direction is continuous tracking. The project began with this process:
     - Dr. Georgios Ioannou (Greece) suggested the project to me (I told him I had extra cycles)  
     - fleshed out the idea with Chat GPT 5.2  
     - exported a `full_spec-v01.md` file and wrote a user `interaction_story.md`  
@@ -21,13 +21,13 @@ This Demonstrates:
 Tech Stack:  
     - React Native  
     - TypeScript  
-    - Expo SDK 54  
+    - Expo SDK 57
     - expo-sqlite  
 
 The sourcecode is licenced under MIT.  
 Artwork and branding are not included in the MIT license.  
 
-## Screenshots
+## Original Prototype Screenshots
 <p align="center">
   <img src="assets/screenshots/01-welcome.jpeg" width="250" />
   <img src="assets/screenshots/02-baseline.jpeg" width="250" />

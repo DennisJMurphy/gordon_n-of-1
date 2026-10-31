@@ -6,7 +6,7 @@ import { getISOTimestamp } from '../../utils/dates';
 
 interface WeeklyCheckinRow {
   id: string;
-  episode_id: string;
+  concern_id: string | null;
   week_start_date: string;
   adherence_json: string | null;
   changes_json: string | null;
@@ -19,7 +19,7 @@ interface WeeklyCheckinRow {
 function rowToCheckin(row: WeeklyCheckinRow): WeeklyCheckin {
   return {
     id: row.id,
-    episode_id: row.episode_id,
+    concern_id: row.concern_id ?? undefined,
     week_start_date: row.week_start_date,
     adherence: row.adherence_json ? JSON.parse(row.adherence_json) : {},
     changes: row.changes_json ? JSON.parse(row.changes_json) : {},
@@ -30,10 +30,9 @@ function rowToCheckin(row: WeeklyCheckinRow): WeeklyCheckin {
   };
 }
 
-export async function getCheckinsByEpisode(episodeId: string): Promise<WeeklyCheckin[]> {
+export async function getAllCheckins(): Promise<WeeklyCheckin[]> {
   const rows = await db.getAllAsync<WeeklyCheckinRow>(
-    'SELECT * FROM weekly_checkins WHERE episode_id = ? ORDER BY week_start_date DESC',
-    [episodeId]
+    'SELECT * FROM weekly_checkins ORDER BY week_start_date DESC'
   );
   return rows.map(rowToCheckin);
 }
@@ -47,12 +46,11 @@ export async function getCheckinById(id: string): Promise<WeeklyCheckin | null> 
 }
 
 export async function getCheckinByWeek(
-  episodeId: string,
   weekStartDate: string
 ): Promise<WeeklyCheckin | null> {
   const row = await db.getFirstAsync<WeeklyCheckinRow>(
-    'SELECT * FROM weekly_checkins WHERE episode_id = ? AND week_start_date = ?',
-    [episodeId, weekStartDate]
+    'SELECT * FROM weekly_checkins WHERE week_start_date = ?',
+    [weekStartDate]
   );
   return row ? rowToCheckin(row) : null;
 }
@@ -65,12 +63,12 @@ export async function createCheckin(
 
   await db.runAsync(
     `INSERT INTO weekly_checkins (
-      id, episode_id, week_start_date, adherence_json, changes_json, 
+      id, concern_id, week_start_date, adherence_json, changes_json,
       events_json, confidence, created_at, updated_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
-      data.episode_id,
+      data.concern_id ?? null,
       data.week_start_date,
       JSON.stringify(data.adherence ?? {}),
       JSON.stringify(data.changes ?? {}),
@@ -86,7 +84,7 @@ export async function createCheckin(
 
 export async function updateCheckin(
   id: string,
-  data: Partial<Omit<WeeklyCheckin, 'id' | 'episode_id' | 'created_at' | 'updated_at'>>
+  data: Partial<Omit<WeeklyCheckin, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<WeeklyCheckin | null> {
   const existing = await getCheckinById(id);
   if (!existing) return null;
@@ -100,6 +98,7 @@ export async function updateCheckin(
       changes_json = ?,
       events_json = ?,
       confidence = ?,
+      concern_id = ?,
       updated_at = ?
     WHERE id = ?`,
     [
@@ -108,6 +107,7 @@ export async function updateCheckin(
       JSON.stringify(data.changes ?? existing.changes ?? {}),
       JSON.stringify(data.events ?? existing.events ?? []),
       data.confidence ?? existing.confidence ?? null,
+      data.concern_id ?? existing.concern_id ?? null,
       now,
       id,
     ]
@@ -136,12 +136,11 @@ export function getCurrentWeekStart(): string {
 }
 
 /**
- * Get the most recent check-in for an episode
+ * Get the most recent check-in
  */
-export async function getLatestCheckin(episodeId: string): Promise<WeeklyCheckin | null> {
+export async function getLatestCheckin(): Promise<WeeklyCheckin | null> {
   const row = await db.getFirstAsync<WeeklyCheckinRow>(
-    'SELECT * FROM weekly_checkins WHERE episode_id = ? ORDER BY week_start_date DESC LIMIT 1',
-    [episodeId]
+    'SELECT * FROM weekly_checkins ORDER BY week_start_date DESC LIMIT 1'
   );
   return row ? rowToCheckin(row) : null;
 }

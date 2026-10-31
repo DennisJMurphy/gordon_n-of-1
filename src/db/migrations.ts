@@ -139,6 +139,103 @@ export const migrations: Migration[] = [
       `ALTER TABLE interventions ADD COLUMN frequency TEXT;`,
     ],
   },
+  {
+    id: 3,
+    name: "replace_episodes_with_continuous_concerns",
+    sql: [
+      `DROP TABLE IF EXISTS reports;`,
+      `DROP TABLE IF EXISTS day_notes;`,
+      `DROP TABLE IF EXISTS weekly_checkins;`,
+      `DROP TABLE IF EXISTS interventions;`,
+      `DROP TABLE IF EXISTS episodes;`,
+      `
+      CREATE TABLE concerns (
+        id TEXT PRIMARY KEY NOT NULL,
+        title TEXT NOT NULL,
+        onset_date TEXT,
+        initial_note TEXT,
+        status TEXT NOT NULL CHECK (status IN ('open','resolved')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      `,
+      `
+      CREATE TABLE concern_updates (
+        id TEXT PRIMARY KEY NOT NULL,
+        concern_id TEXT NOT NULL,
+        event_date TEXT,
+        event_type TEXT NOT NULL CHECK (event_type IN ('observation','interpretation','resolved','reopened')),
+        label TEXT,
+        certainty TEXT CHECK (certainty IN ('unknown','suspected','confirmed')),
+        note TEXT,
+        recorded_at TEXT NOT NULL,
+        FOREIGN KEY (concern_id) REFERENCES concerns(id) ON DELETE CASCADE
+      );
+      `,
+      `
+      CREATE TABLE interventions (
+        id TEXT PRIMARY KEY NOT NULL,
+        compound TEXT NOT NULL,
+        custom_name TEXT,
+        dose REAL,
+        unit TEXT,
+        route TEXT,
+        form TEXT,
+        timing_json TEXT,
+        frequency TEXT,
+        with_food TEXT,
+        brand TEXT,
+        product TEXT,
+        notes TEXT,
+        start_date TEXT NOT NULL,
+        end_date TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      `,
+      `
+      CREATE TABLE intervention_events (
+        id TEXT PRIMARY KEY NOT NULL,
+        intervention_id TEXT NOT NULL,
+        event_date TEXT NOT NULL,
+        event_type TEXT NOT NULL CHECK (event_type IN ('started','updated','stopped')),
+        details_json TEXT NOT NULL,
+        recorded_at TEXT NOT NULL,
+        FOREIGN KEY (intervention_id) REFERENCES interventions(id) ON DELETE CASCADE
+      );
+      `,
+      `
+      CREATE TABLE weekly_checkins (
+        id TEXT PRIMARY KEY NOT NULL,
+        concern_id TEXT,
+        week_start_date TEXT NOT NULL,
+        adherence_json TEXT,
+        changes_json TEXT,
+        events_json TEXT,
+        confidence TEXT CHECK (confidence IN ('sure','mostly','guessing')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (concern_id) REFERENCES concerns(id) ON DELETE SET NULL
+      );
+      `,
+      `
+      CREATE TABLE day_notes (
+        id TEXT PRIMARY KEY NOT NULL,
+        concern_id TEXT,
+        date TEXT NOT NULL,
+        note TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE (date),
+        FOREIGN KEY (concern_id) REFERENCES concerns(id) ON DELETE SET NULL
+      );
+      `,
+      `CREATE INDEX idx_concern_updates_concern_date ON concern_updates(concern_id, event_date, recorded_at);`,
+      `CREATE INDEX idx_intervention_events_intervention_date ON intervention_events(intervention_id, event_date, recorded_at);`,
+      `CREATE INDEX idx_weekly_checkins_week ON weekly_checkins(week_start_date);`,
+      `CREATE INDEX idx_day_notes_date ON day_notes(date);`,
+    ],
+  },
 ];
 
 export async function runMigrations(db: SQLite.SQLiteDatabase) {

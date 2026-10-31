@@ -3,8 +3,9 @@
 
 export type Sex = 'male' | 'female' | 'intersex' | 'prefer_not_to_say' | 'other';
 export type RelationshipStatus = 'single' | 'long_term' | 'married' | 'prefer_not_to_say';
-export type EpisodeType = 'observational' | 'intervention';
-export type EpisodeStatus = 'active' | 'closed';
+export type ConcernStatus = 'open' | 'resolved';
+export type ConcernEventType = 'observation' | 'interpretation' | 'resolved' | 'reopened';
+export type ConcernCertainty = 'unknown' | 'suspected' | 'confirmed';
 export type Confidence = 'sure' | 'mostly' | 'guessing';
 export type WithFood = 'yes' | 'no' | 'mixed';
 export type Route = 'oral' | 'sublingual';
@@ -60,23 +61,29 @@ export interface BaselineContext {
   share_defaults: ShareDefaults;
 }
 
-// Episode entity
-export interface Episode {
+export interface Concern {
   id: string;
   title: string;
-  start_date: string; // YYYY-MM-DD
-  end_date: string;   // YYYY-MM-DD
-  type: EpisodeType;
-  status: EpisodeStatus;
-  special_summary?: string;
+  onset_date?: string; // YYYY, YYYY-MM or YYYY-MM-DD
+  initial_note?: string;
+  status: ConcernStatus;
   created_at: string;
   updated_at: string;
 }
 
-// Intervention entity
+export interface ConcernUpdate {
+  id: string;
+  concern_id: string;
+  event_date?: string; // YYYY, YYYY-MM or YYYY-MM-DD
+  event_type: ConcernEventType;
+  label?: string;
+  certainty?: ConcernCertainty;
+  note?: string;
+  recorded_at: string;
+}
+
 export interface Intervention {
   id: string;
-  episode_id: string;
   compound: Compound;
   custom_name?: string;
   dose?: number;
@@ -89,14 +96,27 @@ export interface Intervention {
   brand?: string;
   product?: string;
   notes?: string;
+  start_date: string;
+  end_date?: string;
   created_at: string;
   updated_at: string;
+}
+
+export type InterventionEventType = 'started' | 'updated' | 'stopped';
+
+export interface InterventionEvent {
+  id: string;
+  intervention_id: string;
+  event_date: string;
+  event_type: InterventionEventType;
+  details: Partial<Intervention>;
+  recorded_at: string;
 }
 
 // Weekly check-in entity
 export interface WeeklyCheckin {
   id: string;
-  episode_id: string;
+  concern_id?: string;
   week_start_date: string; // YYYY-MM-DD
   adherence: Record<string, AdherenceBin>; // compound -> bin
   changes: {
@@ -117,29 +137,16 @@ export interface WeeklyCheckin {
 // Day note entity
 export interface DayNote {
   id: string;
-  episode_id: string;
+  concern_id?: string;
   date: string; // YYYY-MM-DD
   note?: string;
   created_at: string;
   updated_at: string;
 }
 
-// Report entity
-export interface Report {
-  id: string;
-  episode_id: string;
-  schema_version: string;
-  generated_at: string;
-  report_json: string;
-  private_json?: string;
-  exported_to?: string;
-  exported_at?: string;
-}
-
 // Onboarding state (transient, for the flow)
 export interface OnboardingState {
   baseline: Partial<BaselineContext>;
-  episode: Partial<Episode>;
   interventions: Partial<Intervention>[];
   reminders: {
     enabled: boolean;

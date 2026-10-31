@@ -4,10 +4,11 @@ import {
   getQuarterStartDate,
   getQuarterEndDate,
   getQuarterLabel,
-  getDefaultEpisodeTitle,
+  isValidApproximateDate,
+  formatApproximateDate,
+  getElapsedCalendarDays,
   slugify,
 } from '../dates';
-import { Episode } from '../../types';
 
 describe('formatDateISO', () => {
   it('formats a standard date', () => {
@@ -115,45 +116,25 @@ describe('getQuarterLabel', () => {
   });
 });
 
-describe('getDefaultEpisodeTitle', () => {
-  const makeEpisode = (start_date: string): Episode => ({
-    id: 'ep-1',
-    title: 'whatever',
-    start_date,
-    end_date: '2026-03-31',
-    type: 'observational',
-    status: 'active',
-    created_at: '',
-    updated_at: '',
+describe('concern date helpers', () => {
+  it.each(['2026', '2026-10', '2026-10-31'])('accepts known date precision %s', (value) => {
+    expect(isValidApproximateDate(value)).toBe(true);
   });
 
-  it('returns quarter label with no existing episodes', () => {
-    const result = getDefaultEpisodeTitle(new Date(2026, 0, 15), []);
-    expect(result).toBe('Q1 2026');
+  it.each(['2026-13', '2026-02-30', '26-10-31', ''])('rejects invalid date %s', (value) => {
+    expect(isValidApproximateDate(value)).toBe(false);
   });
 
-  it('appends e2 when one episode exists in same quarter', () => {
-    const existing = [makeEpisode('2026-01-01')];
-    const result = getDefaultEpisodeTitle(new Date(2026, 1, 10), existing);
-    expect(result).toBe('Q1 2026 e2');
+  it('formats year and month precision without inventing a day', () => {
+    expect(formatApproximateDate('2026')).toBe('2026');
+    expect(formatApproximateDate('2026-10')).toBe('October 2026');
+    expect(formatApproximateDate()).toBe('Date unknown');
   });
 
-  it('appends e3 when two episodes exist in same quarter', () => {
-    const existing = [makeEpisode('2026-01-01'), makeEpisode('2026-02-15')];
-    const result = getDefaultEpisodeTitle(new Date(2026, 2, 1), existing);
-    expect(result).toBe('Q1 2026 e3');
-  });
-
-  it('does not count episodes from a different quarter', () => {
-    const existing = [makeEpisode('2026-04-01')]; // Q2
-    const result = getDefaultEpisodeTitle(new Date(2026, 0, 15), existing); // Q1
-    expect(result).toBe('Q1 2026');
-  });
-
-  it('handles cross-year quarter boundaries', () => {
-    const existing = [makeEpisode('2025-10-01')]; // Q4 2025
-    const result = getDefaultEpisodeTitle(new Date(2026, 0, 1), existing); // Q1 2026
-    expect(result).toBe('Q1 2026');
+  it('calculates elapsed days only for exact dates', () => {
+    expect(getElapsedCalendarDays('2026-10-01', '2026-10-09')).toBe(8);
+    expect(getElapsedCalendarDays('2026-10', '2026-10-09')).toBeNull();
+    expect(getElapsedCalendarDays('2026-10-09', '2026-10-01')).toBeNull();
   });
 });
 

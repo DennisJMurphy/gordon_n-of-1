@@ -1,12 +1,11 @@
 // src/db/repositories/interventions.ts
 import { db } from '../index';
-import { Intervention, Compound, Route, Form, WithFood, Timing, Frequency } from '../../types';
+import { Intervention, InterventionEvent, InterventionEventType, Compound, Route, Form, WithFood, Timing, Frequency } from '../../types';
 import { generateId } from '../../utils/uuid';
-import { getISOTimestamp } from '../../utils/dates';
+import { formatDateISO, getISOTimestamp } from '../../utils/dates';
 
 interface InterventionRow {
   id: string;
-  episode_id: string;
   compound: string;
   custom_name: string | null;
   dose: number | null;
@@ -19,6 +18,8 @@ interface InterventionRow {
   brand: string | null;
   product: string | null;
   notes: string | null;
+  start_date: string;
+  end_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -26,7 +27,6 @@ interface InterventionRow {
 function rowToIntervention(row: InterventionRow): Intervention {
   return {
     id: row.id,
-    episode_id: row.episode_id,
     compound: row.compound as Compound,
     custom_name: row.custom_name ?? undefined,
     dose: row.dose ?? undefined,
@@ -39,15 +39,16 @@ function rowToIntervention(row: InterventionRow): Intervention {
     brand: row.brand ?? undefined,
     product: row.product ?? undefined,
     notes: row.notes ?? undefined,
+    start_date: row.start_date,
+    end_date: row.end_date ?? undefined,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
 }
 
-export async function getInterventionsByEpisode(episodeId: string): Promise<Intervention[]> {
+export async function getAllInterventions(): Promise<Intervention[]> {
   const rows = await db.getAllAsync<InterventionRow>(
-    'SELECT * FROM interventions WHERE episode_id = ? ORDER BY created_at',
-    [episodeId]
+    'SELECT * FROM interventions ORDER BY end_date IS NOT NULL, start_date DESC, created_at DESC'
   );
   return rows.map(rowToIntervention);
 }
@@ -68,12 +69,12 @@ export async function createIntervention(
 
   await db.runAsync(
     `INSERT INTO interventions (
-      id, episode_id, compound, custom_name, dose, unit, route, form,
-      timing_json, frequency, with_food, brand, product, notes, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id, compound, custom_name, dose, unit, route, form,
+      timing_json, frequency, with_food, brand, product, notes,
+      start_date, end_date, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
-      data.episode_id,
       data.compound,
       data.custom_name ?? null,
       data.dose ?? null,
@@ -86,17 +87,21 @@ export async function createIntervention(
       data.brand ?? null,
       data.product ?? null,
       data.notes ?? null,
+      data.start_date,
+      data.end_date ?? null,
       now,
       now,
     ]
   );
 
-  return (await getInterventionById(id))!;
+  const intervention = (await getInterventionById(id))!;
+  await addInterventionEvent(id, intervention.start_date, 'started', intervention);
+  return intervention;
 }
 
 export async function updateIntervention(
   id: string,
-  data: Partial<Omit<Intervention, 'id' | 'episode_id' | 'created_at' | 'updated_at'>>
+  data: Partial<Omit<Intervention, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<Intervention | null> {
   const existing = await getInterventionById(id);
   if (!existing) return null;
@@ -117,6 +122,8 @@ export async function updateIntervention(
       brand = ?,
       product = ?,
       notes = ?,
+      start_date = ?,
+      end_date = ?,
       updated_at = ?
     WHERE id = ?`,
     [
@@ -132,12 +139,69 @@ export async function updateIntervention(
       data.brand ?? existing.brand ?? null,
       data.product ?? existing.product ?? null,
       data.notes ?? existing.notes ?? null,
+      data.start_date ?? existing.start_date,
+      data.end_date ?? existing.end_date ?? null,
       now,
       id,
     ]
   );
 
-  return getInterventionById(id);
+  const updated = await getInterventionById(id);
+  if (updated) {
+    await addInterventionEvent(id, formatDateISO(new Date()), 'updated', updated);
+  }
+  return updated;
+}
+
+export async function stopIntervention(id: string, endDate: string): Promise<Intervention | null> {
+  const existing = await getInterventionById(id);
+  if (!existing) return null;
+  await db.runAsync(
+    'UPDATE interventions SET end_date = ?, updated_at = ? WHERE id = ?',
+    [endDate, getISOTimestamp(), id]
+  );
+  const stopped = await getInterventionById(id);
+  if (stopped) await addInterventionEvent(id, endDate, 'stopped', stopped);
+  return stopped;
+}
+
+async function addInterventionEvent(
+  interventionId: string,
+  eventDate: string,
+  eventType: InterventionEventType,
+  details: Partial<Intervention>
+): Promise<void> {
+  await db.runAsync(
+    `INSERT INTO intervention_events (
+      id, intervention_id, event_date, event_type, details_json, recorded_at
+    ) VALUES (?, ?, ?, ?, ?, ?)`,
+    [generateId(), interventionId, eventDate, eventType, JSON.stringify(details), getISOTimestamp()]
+  );
+}
+
+interface InterventionEventRow {
+  id: string;
+  intervention_id: string;
+  event_date: string;
+  event_type: string;
+  details_json: string;
+  recorded_at: string;
+}
+
+export async function getInterventionEvents(interventionId: string): Promise<InterventionEvent[]> {
+  const rows = await db.getAllAsync<InterventionEventRow>(
+    `SELECT * FROM intervention_events WHERE intervention_id = ?
+     ORDER BY event_date, recorded_at`,
+    [interventionId]
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    intervention_id: row.intervention_id,
+    event_date: row.event_date,
+    event_type: row.event_type as InterventionEventType,
+    details: JSON.parse(row.details_json),
+    recorded_at: row.recorded_at,
+  }));
 }
 
 export async function deleteIntervention(id: string): Promise<boolean> {

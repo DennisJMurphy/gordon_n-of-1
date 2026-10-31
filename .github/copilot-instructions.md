@@ -1,7 +1,7 @@
 # Gordon — Copilot Instructions
 
 ## What This Is
-Privacy-first React Native (Expo SDK 54) app for structured n-of-1 self-experiment reports. Users create time-bounded **episodes**, log **interventions** and **weekly check-ins**, then generate anonymized reports. All data stays on-device in SQLite.
+Privacy-first React Native (Expo SDK 57) app for continuous personal health tracking. Users record **concerns** and dated updates, ongoing interventions/routines, notes and optional check-ins. Data stays on-device in SQLite. Reports are temporarily unavailable while the report model is redesigned for continuous history.
 
 ## Hard Rules
 - **Never install a new dependency without asking first.**
@@ -13,9 +13,9 @@ Privacy-first React Native (Expo SDK 54) app for structured n-of-1 self-experime
 
 ```
 App.tsx → initDb() → RootNavigator
-  ├── OnboardingNavigator  (first-run flow, writes baseline + first episode)
+    ├── OnboardingNavigator  (first-run flow, writes baseline + optional interventions)
   └── MainTabNavigator
-        ├── Home (HomeStackNavigator — episodes, checkins, interventions)
+      ├── Home (HomeStackNavigator — concerns, check-ins, interventions)
         ├── Calendar
         ├── Reports
         └── Settings
@@ -35,19 +35,7 @@ App.tsx → initDb() → RootNavigator
 
 Each table has a repository file exporting async CRUD functions:
 
-```typescript
-// Private row interface matching SQLite columns (all strings/nulls)
-interface EpisodeRow { ... }
-
-// Pure mapper: DB nulls → domain undefined, JSON parse
-function rowToEpisode(row: EpisodeRow): Episode { ... }
-
-// Standard exports:
-export async function getEpisodeById(id: string): Promise<Episode | null>
-export async function getAllEpisodes(): Promise<Episode[]>
-export async function createEpisode(data: Omit<Episode, 'id' | 'created_at' | 'updated_at'>): Promise<Episode>
-export async function updateEpisode(id: string, data: Partial<...>): Promise<Episode | null>
-```
+Concern updates are append-only timeline entries. Preserve the initial observation; later observations, interpretation changes, and status changes are separate records.
 
 - IDs generated via `generateId()` → `Crypto.randomUUID()` from `src/utils/uuid.ts`
 - Timestamps via `getISOTimestamp()` → `new Date().toISOString()` from `src/utils/dates.ts`
@@ -71,8 +59,7 @@ export async function updateEpisode(id: string, data: Partial<...>): Promise<Epi
 
 ## Services (`src/services/`)
 
-- **`reportBuilder.ts`** — Two-tier reports: `ShareSafeReport` (anonymized, relative dates, no brands) and `PrivateReport` (full detail). Pure builder functions + async orchestrator. Schema version `0.1.0`.
-- **`dataManagement.ts`** — `exportAllData()`, `shareExportedData()`, `wipeAllData()`, `getDataStats()`.
+- **`dataManagement.ts`** — `exportAllData()`, `shareExportedData()`, `wipeAllData()`, `getDataStats()` for baseline, concerns, interventions, check-ins, notes and their timeline events.
 - **`notifications.ts`** — Weekly reminders via expo-notifications, settings persisted in AsyncStorage.
 
 ## Key Conventions
