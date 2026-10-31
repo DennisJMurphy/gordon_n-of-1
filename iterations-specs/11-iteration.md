@@ -38,7 +38,7 @@ The scratchy-throat → flu → recovery journey tests the new product's core id
 - A user can mark resolution and see an elapsed duration when enough date information exists; otherwise Gordon does not fabricate a duration.
 - Data persists across app restarts, including after a fresh install and a documented reset of the development database.
 - No check-in, reminder, hypothesis or intervention is required to complete the journey.
-- No obsolete episode tables, foreign keys, home cards, onboarding prompts or navigation routes remain; old report paths are either updated or explicitly unavailable.
+- No episode model remains in active runtime code or the current database schema (including tables, foreign keys, home cards, onboarding prompts and navigation routes). Historical documentation and migration history are excluded. Old report paths must be updated or explicitly unavailable.
 - Relevant automated tests are added/updated; the full existing test suite passes, and the revised flow works on a physical device or simulator.
 - Expo Doctor and lint/typecheck (where configured) pass; report what was actually run.
 
