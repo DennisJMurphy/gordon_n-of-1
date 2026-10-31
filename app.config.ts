@@ -7,12 +7,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'dark',
-  newArchEnabled: true,
-  splash: {
-    image: './assets/splash-icon.png',
-    resizeMode: 'contain',
-    backgroundColor: '#0f1729',
-  },
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.gordon.nof1',
@@ -25,7 +19,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#0f1729',
     },
-    edgeToEdgeEnabled: true,
     package: 'com.gordon.nof1',
   },
   web: {

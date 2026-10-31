@@ -7,7 +7,7 @@ import { HomeStackParamList } from '../../navigation/types';
 import { Concern, ConcernCertainty, ConcernEventType, ConcernUpdate } from '../../types';
 import { addConcernUpdate, getConcernById, getConcernUpdates } from '../../db/repositories/concerns';
 import { formatApproximateDate, formatDateISO, getElapsedCalendarDays, isValidApproximateDate } from '../../utils/dates';
-import { colors, fontSize, spacing, borderRadius } from '../../theme';
+import { colors, fontSize, spacing } from '../../theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ConcernDetail'>;
 

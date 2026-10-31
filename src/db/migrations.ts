@@ -236,6 +236,24 @@ export const migrations: Migration[] = [
       `CREATE INDEX idx_day_notes_date ON day_notes(date);`,
     ],
   },
+  {
+    id: 4,
+    name: "enforce_one_checkin_per_week",
+    sql: [
+      `
+      DELETE FROM weekly_checkins WHERE id IN (
+        SELECT w.id FROM weekly_checkins w
+        WHERE EXISTS (
+          SELECT 1 FROM weekly_checkins n
+          WHERE n.week_start_date = w.week_start_date
+            AND (n.updated_at > w.updated_at OR (n.updated_at = w.updated_at AND n.id > w.id))
+        )
+      );
+      `,
+      `DROP INDEX IF EXISTS idx_weekly_checkins_week;`,
+      `CREATE UNIQUE INDEX idx_weekly_checkins_week ON weekly_checkins(week_start_date);`,
+    ],
+  },
 ];
 
 export async function runMigrations(db: SQLite.SQLiteDatabase) {

@@ -69,8 +69,10 @@ describe('wipeAllData', () => {
 
     await wipeAllData();
 
-    expect(__mockDb.execAsync).toHaveBeenCalledTimes(1);
-    const sql = __mockDb.execAsync.mock.calls[0][0];
+    const calls = __mockDb.execAsync.mock.calls.map((c) => c[0]);
+    expect(calls[0]).toBe('BEGIN');
+    expect(calls[calls.length - 1]).toBe('COMMIT');
+    const sql = calls[1];
     expect(sql).toContain('DELETE FROM intervention_events');
     expect(sql).toContain('DELETE FROM concern_updates');
     expect(sql).toContain('DELETE FROM concerns');
@@ -78,6 +80,18 @@ describe('wipeAllData', () => {
     expect(sql).toContain('DELETE FROM weekly_checkins');
     expect(sql).toContain('DELETE FROM interventions');
     expect(sql).toContain('DELETE FROM baseline_context');
+  });
+
+  it('rolls back when a delete fails', async () => {
+    __mockDb.execAsync
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('DB error'))
+      .mockResolvedValueOnce(undefined);
+
+    await expect(wipeAllData()).rejects.toThrow('Failed to wipe data');
+    const calls = __mockDb.execAsync.mock.calls.map((c) => c[0]);
+    expect(calls).toContain('ROLLBACK');
+    expect(calls).not.toContain('COMMIT');
   });
 
   it('throws on DB error', async () => {
