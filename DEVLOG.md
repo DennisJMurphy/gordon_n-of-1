@@ -1,3 +1,8 @@
+31-Oct-2026
+big changes today, moved from episodes to concern tracking
+pending deeper review and refinement, should be more user-oriented
+also updated dependencies
+
 6-Oct-2026
 upgraded expo to SDK 57
 confirmed profile preview works on ios
