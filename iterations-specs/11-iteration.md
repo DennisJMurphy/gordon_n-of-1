@@ -16,7 +16,7 @@ The scratchy-throat → flu → recovery journey tests the new product's core id
 2. Define the smallest durable representation for a concern and dated updates, including approximate onset, observation date, optional note, evolving label/interpretation and optional resolution. Preserve distinctions between suspected and confirmed labels where used.
 3. Add a simple way to create a concern, record an update and resolve/reopen it if needed.
 4. Show a concern's chronological history and observed duration where onset and resolution are known.
-5. **Remove the old episode model**, including obsolete tables, episode-centric navigation/onboarding, and dead references. No data migration or legacy compatibility layer is required. Adapt reusable non-episode functionality where feasible; where a feature (such as old episode reports) cannot yet work correctly, explicitly defer/disable it without leaving broken routes. Document whether a local database reset or reinstall is needed.
+5. Replace the episode as a container for tracking. Keep the capabilities currently grouped under episodes as independent records: concerns and their dated updates; interventions/routines and their change history; observations, notes and check-ins associated with dates and, where useful, a concern or intervention; and reports based on selected records or time periods. Remove episode-specific runtime flows, schema relationships and routes. Features that cannot yet work without episodes must be explicitly unavailable, without broken navigation. No legacy episode-data migration is required. Document whether a local database reset or reinstall is needed.
 6. Add tests for chronology, backdated updates, unknown/approximate dates, resolution and reopening, and SQLite persistence.
 
 ## Out of scope
@@ -48,7 +48,8 @@ The scratchy-throat → flu → recovery journey tests the new product's core id
 - **Confirmed:** development data may be wiped; old episode tables should be removed, not preserved. Prefer a clean schema/reset strategy appropriate to the actual repository and document it.
 - **Default UI:** add a clear **Concerns** entry point on Home and a concern detail/history screen; reuse the existing calendar if convenient, but do not make it a prerequisite.
 - **Working terminology:** use **Concern** in the data model and initial UI. A concern can represent a symptom, issue or developing illness; names and interpretations may change.
-- Preserve observation history when the label changes; record both event/effective date and creation timestamp where possible. Support date-only and approximate/unknown onset without inventing a precise date.
+- Preserve history as dated entries: keep the original observation unchanged, and append later observations, interpretation changes, resolution and reopening events. Record the event/effective date and the timestamp when an entry was recorded where possible; use event dates to order the history and retain recorded timestamps to show when Gordon learned about each event. Support date-only and approximate/unknown onset without inventing a precise date.
+- Show elapsed calendar time from the original onset to resolution, or to the current date while unresolved, only when the onset date is sufficiently known. Keep resolution and reopening events visible; elapsed time does not imply the concern was continuously active or establish a cause or diagnosis.
 - Keep the implementation narrow: do not build general causality analysis, baseline versioning or a complete new report engine in this iteration.
 
 ## Copilot handoff
