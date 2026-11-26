@@ -1,5 +1,5 @@
 // src/screens/main/WeeklyCheckinScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,6 @@ import { ScreenContainer, Button, Select } from '../../components/ui';
 import { colors, spacing, fontSize, borderRadius } from '../../theme';
 import { HomeStackParamList } from '../../navigation/types';
 import {
-  WeeklyCheckin,
   AdherenceBin,
   Confidence,
   Intervention,

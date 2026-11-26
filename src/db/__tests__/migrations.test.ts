@@ -105,6 +105,37 @@ describe('runMigrations', () => {
     expect(names).toContain('idx_day_notes_date');
   });
 
+  it('keeps only the newest check-in per week and rejects future duplicates', async () => {
+    const { db, raw } = makeTestDb();
+    const latestMigration = migrations.splice(3);
+
+    try {
+      await runMigrations(asSQLiteDb(db));
+      const insert = raw.prepare(
+        `INSERT INTO weekly_checkins (id, week_start_date, created_at, updated_at)
+         VALUES (?, '2026-01-05', 'c', ?)`
+      );
+      insert.run('older', '2026-01-06T00:00:00Z');
+      insert.run('newer', '2026-01-07T00:00:00Z');
+    } finally {
+      migrations.push(...latestMigration);
+    }
+
+    await runMigrations(asSQLiteDb(db));
+
+    const rows = raw
+      .prepare("SELECT id FROM weekly_checkins WHERE week_start_date = '2026-01-05'")
+      .all() as { id: string }[];
+    expect(rows.map((r) => r.id)).toEqual(['newer']);
+
+    expect(() =>
+      raw.prepare(
+        `INSERT INTO weekly_checkins (id, week_start_date, created_at, updated_at)
+         VALUES ('dup', '2026-01-05', 'c', 'u')`
+      ).run()
+    ).toThrow();
+  });
+
   it('concern columns support status and approximate dates', async () => {
     const { db, raw } = makeTestDb();
     await runMigrations(asSQLiteDb(db));

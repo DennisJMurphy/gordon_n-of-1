@@ -234,6 +234,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
   },
+  calendarHint: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',

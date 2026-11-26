@@ -87,15 +87,22 @@ export async function shareExportedData(): Promise<void> {
  */
 export async function wipeAllData(): Promise<void> {
   try {
-    await db.execAsync(`
-      DELETE FROM intervention_events;
-      DELETE FROM concern_updates;
-      DELETE FROM concerns;
-      DELETE FROM day_notes;
-      DELETE FROM weekly_checkins;
-      DELETE FROM interventions;
-      DELETE FROM baseline_context;
-    `);
+    await db.execAsync('BEGIN');
+    try {
+      await db.execAsync(`
+        DELETE FROM intervention_events;
+        DELETE FROM concern_updates;
+        DELETE FROM concerns;
+        DELETE FROM day_notes;
+        DELETE FROM weekly_checkins;
+        DELETE FROM interventions;
+        DELETE FROM baseline_context;
+      `);
+      await db.execAsync('COMMIT');
+    } catch (error) {
+      await db.execAsync('ROLLBACK');
+      throw error;
+    }
   } catch (error) {
     console.error('Failed to wipe data:', error);
     throw new Error('Failed to wipe data');
